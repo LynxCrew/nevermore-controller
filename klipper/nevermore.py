@@ -11,6 +11,7 @@ import importlib.util
 import logging
 import os
 import os.path
+import statistics
 import sys
 import threading
 import weakref
@@ -1278,6 +1279,106 @@ class NevermoreSensor:
             self._callback(measured_time, temp)
 
         return measured_time + 1  # 1s delay?
+
+class NevermoreServo:
+    class ControlCurve:
+        def __init__(self, temperature_sensor, config):
+            self.curve_table = []
+            points = config.getlists("points", seps=(",", "\n"), parser=float,
+                                     count=2)
+            for temp, pwm in points:
+                current_point = [temp, pwm]
+                if current_point is None:
+                    continue
+                if len(current_point) != 2:
+                    raise temperature_sensor.printer.config_error(
+                        "Point needs to have exactly one temperature and one angle "
+                        "value."
+                    )
+                if temp > temperature_sensor.max_temp:
+                    raise temperature_sensor.printer.config_error(
+                        "Temperature in point can not exceed max_temp."
+                    )
+                if temp < temperature_sensor.min_temp:
+                    raise temperature_sensor.printer.config_error(
+                        "Temperature in point can not fall below min_temp."
+                    )
+                for _temp, _pwm in self.curve_table:
+                    if _temp == temp:
+                        raise temperature_sensor.printer.config_error(
+                            "Temperature can not exist twice in curve table."
+                        )
+                self.curve_table.append(current_point)
+            if len(self.curve_table) < 2:
+                raise temperature_sensor.printer.config_error(
+                    "At least two points need to be defined for curve in "
+                    "nevermore_servo."
+                )
+            self.curve_table.sort(key=lambda p: p[0])
+            self.cooling_hysteresis = config.getfloat("cooling_hysteresis", 0.0)
+            self.heating_hysteresis = config.getfloat("heating_hysteresis", 0.0)
+            self.smooth_readings = config.getint("smooth_readings", 10,
+                                                 minval=1)
+            self.stored_temps = []
+            for i in range(self.smooth_readings):
+                self.stored_temps.append(0.0)
+            self.last_temp = 0.0
+
+        def temperature_callback(self, read_time, temp):
+            def _interpolate(below, above, temp):
+                return ((below[1] * (above[0] - temp)) + (
+                            above[1] * (temp - below[0]))) / (
+                        above[0] - below[0]
+                )
+
+            temp = self.smooth_temps(temp)
+            if temp <= self.curve_table[0][0]:
+                angle = self.curve_table[0][1]
+                #TODO: send the angle to the servo (or rather use pwm?)
+                return
+            if temp >= self.curve_table[-1][0]:
+                angle = self.curve_table[-1][1]
+                #TODO: send the angle to the servo (or rather use pwm?)
+                return
+
+            below = [
+                self.curve_table[0][0],
+                self.curve_table[0][1],
+            ]
+            above = [
+                self.curve_table[-1][0],
+                self.curve_table[-1][1],
+            ]
+            for config_temp in self.curve_table:
+                if config_temp[0] < temp:
+                    below = config_temp
+                else:
+                    above = config_temp
+                    break
+            angle = _interpolate(below, above, temp)
+            #TODO: send the angle to the servo (or rather use pwm?)
+
+        def smooth_temps(self, current_temp):
+            if (
+                    self.last_temp - self.cooling_hysteresis
+                    <= current_temp
+                    <= self.last_temp + self.heating_hysteresis
+            ):
+                temp = self.last_temp
+            else:
+                temp = current_temp
+            self.last_temp = temp
+            for i in range(1, len(self.stored_temps)):
+                self.stored_temps[i] = self.stored_temps[i - 1]
+            self.stored_temps[0] = temp
+            return statistics.median(self.stored_temps)
+
+        def get_type(self):
+            return "curve"
+
+    def __init__(self, config: ConfigWrapper):
+        self.name = config.get_name().split()[-1]
+        self.printer: Printer = config.get_printer()
 
 
 class NevermoreGlobal:
