@@ -669,6 +669,7 @@ class NevermoreBackgroundWorker:
         service_fan_policy = require(UUID_SERVICE_FAN_POLICY)
         service_ws2812 = require(UUID_SERVICE_WS2812)
         service_display = require(UUID_SERVICE_DISPLAY)
+        service_servo = require(UUID_SERVICE_SERVO)
 
         P = CharacteristicProperty
         aggregate_env = require_char(service_env, UUID_CHAR_DATA_AGGREGATE, {P.NOTIFY})
@@ -1280,9 +1281,12 @@ class NevermoreSensor:
 
         return measured_time + 1  # 1s delay?
 
+SERVO_SIGNAL_PERIOD = 0.020
+
 class NevermoreServo:
     class ControlCurve:
-        def __init__(self, temperature_sensor, config):
+        def __init__(self, temperature_sensor, get_pwm_from_angle, config):
+            self._get_pwm_from_angle = get_pwm_from_angle
             self.curve_table = []
             points = config.getlists("points", seps=(",", "\n"), parser=float,
                                      count=2)
@@ -1333,11 +1337,11 @@ class NevermoreServo:
 
             temp = self.smooth_temps(temp)
             if temp <= self.curve_table[0][0]:
-                angle = self.curve_table[0][1]
+                pwm = self._get_pwm_from_angle(self.curve_table[0][1])
                 #TODO: send the angle to the servo (or rather use pwm?)
                 return
             if temp >= self.curve_table[-1][0]:
-                angle = self.curve_table[-1][1]
+                pwm = self._get_pwm_from_angle(self.curve_table[-1][1])
                 #TODO: send the angle to the servo (or rather use pwm?)
                 return
 
@@ -1355,7 +1359,7 @@ class NevermoreServo:
                 else:
                     above = config_temp
                     break
-            angle = _interpolate(below, above, temp)
+            pwm = self._get_pwm_from_angle(_interpolate(below, above, temp))
             #TODO: send the angle to the servo (or rather use pwm?)
 
         def smooth_temps(self, current_temp):
@@ -1378,7 +1382,41 @@ class NevermoreServo:
 
     def __init__(self, config: ConfigWrapper):
         self.name = config.get_name().split()[-1]
-        self.printer: Printer = config.get_printer()
+        self.printer = config.get_printer()
+        self.min_width = config.getfloat(
+            "minimum_pulse_width", 0.001, above=0.0, below=SERVO_SIGNAL_PERIOD
+        )
+        self.max_width = config.getfloat(
+            "maximum_pulse_width",
+            0.002,
+            above=self.min_width,
+            below=SERVO_SIGNAL_PERIOD,
+        )
+        self.max_angle = config.getfloat("maximum_servo_angle", 180.0)
+        self.angle_to_width = (self.max_width - self.min_width) / self.max_angle
+        self.width_to_value = 1.0 / SERVO_SIGNAL_PERIOD
+        self.last_value = 0.0
+        initial_pwm = 0.0
+        iangle = config.getfloat("initial_angle", None, minval=0.0, #TODO default angle
+                                 maxval=360.0)
+        initial_pwm = self._get_pwm_from_angle(iangle)
+        #TODO Send to controller
+        temperature_sensor_name = config.get("chamber_temperature_sensor", None)
+        self.temperature_sensor = None
+        if temperature_sensor_name is not None:
+            try:
+                self.temperature_sensor = self.printer.lookup_object(temperature_sensor_name)
+            except Exception:
+                raise config.error(
+                    f"Unknown ambient_temp_sensor '{temperature_sensor_name}' specified"
+                )
+        self.control = self.ControlCurve(self.temperature_sensor, self._get_pwm_from_angle, config)
+
+
+    def _get_pwm_from_angle(self, angle):
+        angle = max(0.0, min(self.max_angle, angle))
+        width = self.min_width + angle * self.angle_to_width
+        return width * self.width_to_value
 
 
 class NevermoreGlobal:
