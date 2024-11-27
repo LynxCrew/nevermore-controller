@@ -1306,10 +1306,43 @@ class NevermoreSensor:
 SERVO_SIGNAL_PERIOD = 0.020
 
 class NevermoreServo:
+
+    class ControlManual:
+        def __init__(self, temperature_sensor, config, servo_instance):
+            self.nevermore = servo_instance.nevermore
+            self._get_pwm_from_angle = servo_instance._get_pwm_from_angle
+            self._get_pwm_from_pulse_width = servo_instance._get_pwm_from_pulse_width
+            self.printer = config.get_printer()
+
+            gcode = self.printer.lookup_object("gcode")
+            gcode.register_mux_command(
+                "SET_SERVO",
+                "SERVO",
+                servo_instance.name,
+                self.cmd_SET_SERVO,
+                desc=self.cmd_SET_SERVO_help,
+            )
+
+        cmd_SET_SERVO_help = "Set servo angle"
+        def cmd_SET_SERVO(self, gcmd):
+            width = gcmd.get_float("WIDTH", None)
+            angle = gcmd.get_float("ANGLE", None)
+            template = gcmd.get("TEMPLATE", None)
+            if (width is None) == (angle is None) == (template is None):
+                raise gcmd.error(
+                    "SET_SERVO must specify WIDTH or ANGLE or TEMPLATE")
+            if template is not None:
+                # self.template_eval.set_template(gcmd, self._template_update) TODO have to implement template eval
+                return
+            if width is not None:
+                value = self._get_pwm_from_pulse_width(width)
+            else:
+                value = self._get_pwm_from_angle(angle)
+            self.nevermore.set_servo_pwm(value)
     class ControlCurve:
-        def __init__(self, temperature_sensor, get_pwm_from_angle, config, nevermore):
-            self.nevermore = nevermore
-            self._get_pwm_from_angle = get_pwm_from_angle
+        def __init__(self, temperature_sensor, config, servo_instance):
+            self.nevermore = servo_instance.nevermore
+            self._get_pwm_from_angle = servo_instance._get_pwm_from_angle
             self.curve_table = []
             points = config.getlists("points", seps=(",", "\n"), parser=float,
                                      count=2)
@@ -1435,12 +1468,17 @@ class NevermoreServo:
                 raise config.error(
                     f"Unknown ambient_temp_sensor '{temperature_sensor_name}' specified"
                 )
-        self.control = self.ControlCurve(self.temperature_sensor, self._get_pwm_from_angle, config)
+        self.control = self.ControlCurve(temperature_sensor=self.temperature_sensor, config=config, servo_instance=self)
 
 
     def _get_pwm_from_angle(self, angle):
         angle = max(0.0, min(self.max_angle, angle))
         width = self.min_width + angle * self.angle_to_width
+        return width * self.width_to_value
+
+    def _get_pwm_from_pulse_width(self, width):
+        if width:
+            width = max(self.min_width, min(self.max_width, width))
         return width * self.width_to_value
 
 
