@@ -1384,6 +1384,8 @@ class NevermoreServo:
                 self.stored_temps.append(0.0)
             self.last_temp = 0.0
 
+            temperature_sensor.setup_callback(self.temperature_callback)
+
         def temperature_callback(self, read_time, temp):
             def _interpolate(below, above, temp):
                 return ((below[1] * (above[0] - temp)) + (
