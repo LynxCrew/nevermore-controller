@@ -409,6 +409,20 @@ class CmdDisplayUI(Command):
     def params(self):
         return self.value.to_bytes(1, "little")
 
+class CmdServoControlAbstract(Command):
+    percent: Optional[float]
+
+    def params(self):
+        if self.percent is None:
+            return bytearray([0xFF])  # 0xFF -> percent8 special value: not-known
+
+        p = _clamp(self.percent, 0, 1) * 100
+        return int(p * 2).to_bytes(1, "little")
+
+@dataclass(frozen=True)
+class CmdServoControl(CmdServoControlAbstract):
+    percent: Optional[float]
+
 
 # Special pseudo command: Due to the very high frequency of these commands, we don't
 # queue them, but rather mark the pixel buffer as dirty to fold consecutive writes.
@@ -713,6 +727,7 @@ class NevermoreBackgroundWorker:
             service_display, UUID_CHAR_PERCENT8, {P.WRITE}
         )
         display_ui = require_char(service_display, UUID_CHAR_DISPLAY_UI, {P.WRITE})
+        servo = require_char(service_servo, UUID_CHAR_PERCENT8, {P.WRITE})
 
         self._connected.set()
 
@@ -797,6 +812,8 @@ class NevermoreBackgroundWorker:
                 char = display_brightness
             elif isinstance(cmd, CmdDisplayUI):
                 char = display_ui
+            elif isinstance(cmd, CmdServoControl):
+                char = servo
             else:
                 raise Exception(f"unhandled command {cmd}")
 
@@ -881,6 +898,7 @@ class Nevermore:
         self._state_min = ControllerState()
         self._state_max = ControllerState()
         self.fan = NevermoreFan(self)
+        self.servo = NevermoreServo(self, config)
 
         self.bt_address: Optional[str] = config.get("bt_address", None)
         if self.bt_address is not None:
@@ -1056,6 +1074,10 @@ class Nevermore:
     def set_fan_power(self, percent: Optional[float]):
         if self._interface is not None:
             self._interface.send_command(CmdFanPowerOverride(percent))
+
+    def set_servo_pwm(self, percent: Optional[float]):
+        if self._interface is not None:
+            self._interface.send_command(CmdServoControl(percent))
 
     def state_stats_update(self):
         self._state_min = self._state_min.min(self.state)
@@ -1285,7 +1307,8 @@ SERVO_SIGNAL_PERIOD = 0.020
 
 class NevermoreServo:
     class ControlCurve:
-        def __init__(self, temperature_sensor, get_pwm_from_angle, config):
+        def __init__(self, temperature_sensor, get_pwm_from_angle, config, nevermore):
+            self.nevermore = nevermore
             self._get_pwm_from_angle = get_pwm_from_angle
             self.curve_table = []
             points = config.getlists("points", seps=(",", "\n"), parser=float,
@@ -1338,11 +1361,11 @@ class NevermoreServo:
             temp = self.smooth_temps(temp)
             if temp <= self.curve_table[0][0]:
                 pwm = self._get_pwm_from_angle(self.curve_table[0][1])
-                #TODO: send the angle to the servo (or rather use pwm?)
+                self.nevermore.set_servo_pwm(pwm)  # TODO Check?
                 return
             if temp >= self.curve_table[-1][0]:
                 pwm = self._get_pwm_from_angle(self.curve_table[-1][1])
-                #TODO: send the angle to the servo (or rather use pwm?)
+                self.nevermore.set_servo_pwm(pwm)  # TODO Check?
                 return
 
             below = [
@@ -1360,7 +1383,7 @@ class NevermoreServo:
                     above = config_temp
                     break
             pwm = self._get_pwm_from_angle(_interpolate(below, above, temp))
-            #TODO: send the angle to the servo (or rather use pwm?)
+            self.nevermore.set_servo_pwm(pwm) #TODO Check?
 
         def smooth_temps(self, current_temp):
             if (
@@ -1380,9 +1403,10 @@ class NevermoreServo:
         def get_type(self):
             return "curve"
 
-    def __init__(self, config: ConfigWrapper):
-        self.name = config.get_name().split()[-1]
-        self.printer = config.get_printer()
+    def __init__(self, nevermore: Nevermore, config: ConfigWrapper) -> None:
+        self.name = f"{nevermore.name}_servo"
+        self.nevermore = nevermore
+        self.printer = nevermore.printer
         self.min_width = config.getfloat(
             "minimum_pulse_width", 0.001, above=0.0, below=SERVO_SIGNAL_PERIOD
         )
@@ -1399,8 +1423,9 @@ class NevermoreServo:
         initial_pwm = 0.0
         iangle = config.getfloat("initial_angle", None, minval=0.0, #TODO default angle
                                  maxval=360.0)
-        initial_pwm = self._get_pwm_from_angle(iangle)
-        #TODO Send to controller
+        if iangle is not None:
+            initial_pwm = self._get_pwm_from_angle(iangle)
+        self.nevermore.set_servo_pwm(initial_pwm)
         temperature_sensor_name = config.get("chamber_temperature_sensor", None)
         self.temperature_sensor = None
         if temperature_sensor_name is not None:
