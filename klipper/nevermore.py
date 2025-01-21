@@ -49,6 +49,7 @@ from gcode import GCodeCommand, GCodeDispatch
 from klippy import Printer
 from reactor import SelectReactor
 from typing_extensions import override
+from extras.nevermore_servo_controls import NevermoreServoControls
 
 
 # Commit war-crimes to load `/tools/nevermore_utilities.py`.
@@ -275,7 +276,7 @@ class NevermoreInterface:
 
     @property
     @abstractmethod
-    def nevermore(self) -> Optional['Nevermore']:
+    def nevermore(self) -> Optional["Nevermore"]:
         raise NotImplemented
 
     @property
@@ -676,7 +677,7 @@ class NevermoreSerialInfo:
     baudrate: int = NEVERMORE_SERIAL_BAUDRATE_DEFAULT
 
     @staticmethod
-    def mk(config: ConfigWrapper) -> Optional['NevermoreSerialInfo']:
+    def mk(config: ConfigWrapper) -> Optional["NevermoreSerialInfo"]:
         path: Optional[str] = config.get("serial", None)
         if path is None:
             return None
@@ -754,6 +755,7 @@ class Nevermore:
         self._state_min = ControllerState()
         self._state_max = ControllerState()
         self.fan = NevermoreFan(self)
+        self.servo_controls = NevermoreServoControls(self, config)
 
         # LED-specific code.
         # Ripped from `extras/neopixel.py` because the processing code is entangled with MCU transmission.
@@ -876,21 +878,6 @@ class Nevermore:
     def set_fan_power(self, percent: Optional[float]):
         self._interface.send_command(CmdFanPowerOverride(percent))
 
-    def set_vent_servo(
-        self, percent: Optional[float], hold_for: Optional[float] = None
-    ):
-        if percent is not None:
-            percent = max(min(percent, 1), 0)
-
-        self._interface.send_command(CmdServoVentPWM(percent))
-
-        if percent is not None and 0 < (hold_for or 0):
-            reactor = self.printer.get_reactor()
-            reactor.update_timer(
-                self._timer_vent_servo_release_handle,
-                reactor.monotonic() + hold_for,
-            )
-
     def state_stats_update(self):
         self._state_min = self._state_min.min(self.state)
         self._state_max = self._state_max.max(self.state)
@@ -959,7 +946,7 @@ class Nevermore:
         data = self.state.as_dict()
         data.update((f"{k}_min", v) for k, v in self._state_min.as_dict().items())
         data.update((f"{k}_max", v) for k, v in self._state_max.as_dict().items())
-        data['connected'] = self._interface.connected
+        data["connected"] = self._interface.connected
         return data
 
     def cmd_NEVERMORE_PRINT_START(self, gcmd: GCodeCommand) -> None:
@@ -971,8 +958,13 @@ class Nevermore:
     def cmd_NEVERMORE_VENT_SERVO_SET(self, gcmd: GCodeCommand) -> None:
         perc: Optional[float] = gcmd.get_float("PERCENT", None, 0, 1)
         hold: Optional[float] = gcmd.get_float("HOLD_FOR", None, above=0)
+        control: Optional[float] = gcmd.get_float("CONTROL", None)
+        if control is not None:
+            self.servo_controls.load_profile(gcmd, control)
+            return
         if hold is not None and perc is None:
             gcmd.error("`HOLD_FOR` cannot be used w/o `PERCENT`")
+        self.servo_controls.set_control(None)
         self.set_vent_servo(perc, hold)
 
     def cmd_NEVERMORE_VOC_GATING_THRESHOLD_OVERRIDE(self, gcmd: GCodeCommand) -> None:
@@ -1173,7 +1165,7 @@ class NevermoreGlobal:
         reactor.register_timer(self._check_heaters, reactor.NOW)
 
     def _handle_ready(self) -> None:
-        heaters = self.printer.lookup_object('heaters')
+        heaters = self.printer.lookup_object("heaters")
         self._heaters = [
             heaters.lookup_heater(name)
             for name in heaters.get_all_heaters()
