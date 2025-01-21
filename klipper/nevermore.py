@@ -5,6 +5,7 @@
 # This file may be distributed under the terms of the GNU AGPLv3 license.
 
 import asyncio
+import collections
 import datetime
 import importlib
 import importlib.util
@@ -1304,11 +1305,27 @@ class NevermoreSensor:
         return measured_time + 1  # 1s delay?
 
 SERVO_SIGNAL_PERIOD = 0.020
+AMBIENT_TEMP = 25.0
+PID_PARAM_BASE = 255.0
+SERVO_PROFILE_VERSION = 1
+WATERMARK_PROFILE_OPTIONS = {
+    "control": (str, "%s", "watermark", False),
+    "max_delta": (float, "%.4f", 2.0, True),
+    "reverse": (bool, "%s", False, True)
+}
+# (type, placeholder, default, can_be_none)
+PID_PROFILE_OPTIONS = {
+    "control": (str, "%s", "pid", False),
+    "smooth_time": (float, "%.3f", None, True),
+    "pid_kp": (float, "%.3f", None, False),
+    "pid_ki": (float, "%.3f", None, False),
+    "pid_kd": (float, "%.3f", None, False),
+}
 
 class NevermoreServo:
 
     class ControlManual:
-        def __init__(self, temperature_sensor, config, servo_instance):
+        def __init__(self, profile, servo):
             self.nevermore = servo_instance.nevermore
             self._get_pwm_from_angle = servo_instance._get_pwm_from_angle
             self._get_pwm_from_pulse_width = servo_instance._get_pwm_from_pulse_width
@@ -1339,109 +1356,265 @@ class NevermoreServo:
             else:
                 value = self._get_pwm_from_angle(angle)
             self.nevermore.set_servo_pwm(value)
-    class ControlCurve:
-        def __init__(self, temperature_sensor, config, servo_instance):
-            self.nevermore = servo_instance.nevermore
-            self._get_pwm_from_angle = servo_instance._get_pwm_from_angle
-            self.curve_table = []
-            points = config.getlists("points", seps=(",", "\n"), parser=float,
-                                     count=2)
-            for temp, pwm in points:
-                current_point = [temp, pwm]
-                if current_point is None:
-                    continue
-                if len(current_point) != 2:
-                    raise temperature_sensor.printer.config_error(
-                        "Point needs to have exactly one temperature and one angle "
-                        "value."
-                    )
-                if temp > temperature_sensor.max_temp:
-                    raise temperature_sensor.printer.config_error(
-                        "Temperature in point can not exceed max_temp."
-                    )
-                if temp < temperature_sensor.min_temp:
-                    raise temperature_sensor.printer.config_error(
-                        "Temperature in point can not fall below min_temp."
-                    )
-                for _temp, _pwm in self.curve_table:
-                    if _temp == temp:
-                        raise temperature_sensor.printer.config_error(
-                            "Temperature can not exist twice in curve table."
-                        )
-                self.curve_table.append(current_point)
-            if len(self.curve_table) < 2:
-                raise temperature_sensor.printer.config_error(
-                    "At least two points need to be defined for curve in "
-                    "nevermore_servo."
-                )
-            self.curve_table.sort(key=lambda p: p[0])
-            self.cooling_hysteresis = config.getfloat("cooling_hysteresis", 0.0)
-            self.heating_hysteresis = config.getfloat("heating_hysteresis", 0.0)
-            self.smooth_readings = config.getint("smooth_readings", 10,
-                                                 minval=1)
-            self.stored_temps = []
-            for i in range(self.smooth_readings):
-                self.stored_temps.append(0.0)
-            self.last_temp = 0.0
 
-            temperature_sensor.setup_callback(self.temperature_callback)
+    class ControlBangBang:
+        @staticmethod
+        def init_profile(config_section, name, pmgr=None):
+            temp_profile = {}
+            for key, (
+                    type,
+                    placeholder,
+                    default,
+                    can_be_none,
+            ) in WATERMARK_PROFILE_OPTIONS.items():
+                if key == "max_delta":
+                    above = 0.0
+                else:
+                    above = None
+                temp_profile[key] = pmgr._check_value_config(
+                    key,
+                    config_section,
+                    type,
+                    can_be_none,
+                    default=default,
+                    above=above,
+                )
+            if name != "default":
+                profile_version = config_section.getint("profile_version", None)
+                if SERVO_PROFILE_VERSION != profile_version:
+                    logging.info(
+                        "nevermore_servo_profile: Profile [%s] not compatible with this version\n"
+                        "of nevermore_sensor_profile. Profile Version: %d Current Version: %d "
+                        % (name, profile_version, SERVO_PROFILE_VERSION)
+                    )
+                    return None
+            return temp_profile
+
+        def __init__(self, profile, servo):
+            self.config = config
+            self.servo = servo
+            self.reverse = config.getboolean("reverse", False)
+            self.max_delta = config.getfloat("max_delta", 2.0, above=0.0)
+            self.heating = False
 
         def temperature_callback(self, read_time, temp):
-            def _interpolate(below, above, temp):
-                return ((below[1] * (above[0] - temp)) + (
-                            above[1] * (temp - below[0]))) / (
-                        above[0] - below[0]
-                )
-
-            temp = self.smooth_temps(temp)
-            if temp <= self.curve_table[0][0]:
-                pwm = self._get_pwm_from_angle(self.curve_table[0][1])
-                self.nevermore.set_servo_pwm(pwm)  # TODO Check?
-                return
-            if temp >= self.curve_table[-1][0]:
-                pwm = self._get_pwm_from_angle(self.curve_table[-1][1])
-                self.nevermore.set_servo_pwm(pwm)  # TODO Check?
-                return
-
-            below = [
-                self.curve_table[0][0],
-                self.curve_table[0][1],
-            ]
-            above = [
-                self.curve_table[-1][0],
-                self.curve_table[-1][1],
-            ]
-            for config_temp in self.curve_table:
-                if config_temp[0] < temp:
-                    below = config_temp
-                else:
-                    above = config_temp
-                    break
-            pwm = self._get_pwm_from_angle(_interpolate(below, above, temp))
-            self.nevermore.set_servo_pwm(pwm) #TODO Check?
-
-        def smooth_temps(self, current_temp):
+            current_temp, target_temp = self.servo.temperature_sensor.get_temp(read_time)
             if (
-                    self.last_temp - self.cooling_hysteresis
-                    <= current_temp
-                    <= self.last_temp + self.heating_hysteresis
+                    self.heating != self.reverse
+                    and temp >= target_temp + self.max_delta
             ):
-                temp = self.last_temp
+                self.heating = self.reverse
+            elif (
+                    self.heating == self.reverse
+                    and temp <= target_temp - self.max_delta
+            ):
+                self.heating = not self.reverse
+            if self.heating:
+                angle = self.servo.min_angle
             else:
-                temp = current_temp
-            self.last_temp = temp
-            for i in range(1, len(self.stored_temps)):
-                self.stored_temps[i] = self.stored_temps[i - 1]
-            self.stored_temps[0] = temp
-            return statistics.median(self.stored_temps)
+                angle = self.servo.max_angle
+            self.servo.nevermore.set_servo_pwm(self.servo._get_pwm_from_angle(angle))
 
         def get_type(self):
-            return "curve"
+            return "watermark"
+
+    class ControlPID:
+        def __init__(self, profile, servo):
+            self.config = config
+            self.servo = servo
+            self.reverse = config.getboolean("reverse", False)
+            self.Kp = config.getfloat("pid_Kp") / PID_PARAM_BASE
+            self.Ki = config.getfloat("pid_Ki") / PID_PARAM_BASE
+            self.Kd = config.getfloat("pid_Kd") / PID_PARAM_BASE
+            self.min_deriv_time = config.getfloat("pid_deriv_time", 2.0,
+                                                  above=0.0)
+            imax = config.getfloat(
+                "pid_integral_max", self.servo.get_max_speed(),
+                minval=0.0
+            )
+            self.temp_integ_max = imax / self.Ki
+            self.prev_temp = AMBIENT_TEMP
+            self.prev_temp_time = 0.0
+            self.prev_temp_deriv = 0.0
+            self.prev_temp_integ = 0.0
+
+        def temperature_callback(self, read_time, temp):
+            current_temp, target_temp = self.servo.temperature_sensor.get_temp(read_time)
+            time_diff = read_time - self.prev_temp_time
+            # Calculate change of temperature
+            temp_diff = temp - self.prev_temp
+            if time_diff >= self.min_deriv_time:
+                temp_deriv = temp_diff / time_diff
+            else:
+                temp_deriv = (
+                                     self.prev_temp_deriv * (
+                                         self.min_deriv_time - time_diff)
+                                     + temp_diff
+                             ) / self.min_deriv_time
+            # Calculate accumulated temperature "error"
+            temp_err = target_temp - temp
+            temp_integ = self.prev_temp_integ + temp_err * time_diff
+            temp_integ = max(0.0, min(self.temp_integ_max, temp_integ))
+            # Calculate output
+            co = self.Kp * temp_err + self.Ki * temp_integ - self.Kd * temp_deriv
+            bounded_co = max(0.0, min(self.servo.max_angle, co))
+            if not self.reverse:
+                angle = max(
+                        self.servo.min_angle,
+                        self.servo.max_angle - bounded_co,
+                    )
+            else:
+                angle = max(
+                        self.servo.min_angle,
+                        bounded_co,
+                    )
+            self.servo.nevermore.set_servo_pwm(self.servo._get_pwm_from_angle(angle))  # TODO Check?
+            # Store state for next measurement
+            self.prev_temp = temp
+            self.prev_temp_time = read_time
+            self.prev_temp_deriv = temp_deriv
+            if co == bounded_co:
+                self.prev_temp_integ = temp_integ
+
+        def get_type(self):
+            return "pid"
+
+    class ProfileManager:
+        def __init__(self, servo):
+            self.servo = servo
+            self.control_types = servo.control_types
+            self.profiles = {}
+            self.incompatible_profiles = []
+            # Fetch stored profiles from Config
+            stored_profs = self.servo.config.get_prefix_sections(
+                "nevermore_sensor_profile %s" % self.servo.name
+            )
+            for profile in stored_profs:
+                if len(self.servo.name.split(" ")) > 1:
+                    name = profile.get_name().split(" ", 3)[-1]
+                else:
+                    name = profile.get_name().split(" ", 2)[-1]
+                self._init_profile(profile, name)
+
+        def _init_profile(self, config_section, name, force_control=None):
+            control = self._check_value_config(
+                "control", config_section, str, False, default=force_control
+            )
+            if control in self.control_types.keys():
+                temp_profile = self.control_types[control].init_profile(
+                    config_section, name, self
+                )
+                if temp_profile is not None:
+                    temp_profile["name"] = name
+                    temp_profile["control"] = control
+                    self.profiles[name] = temp_profile
+                return temp_profile
+            else:
+                raise self.servo.printer.config_error(
+                    "Unknown control type '%s' "
+                    "in [nevermore_sensor_profile %s %s]."
+                    % (control, self.servo.name, name)
+                )
+
+        def _check_value_config(
+                self,
+                key,
+                config_section,
+                type,
+                can_be_none,
+                default=None,
+                above=None,
+                minval=None,
+        ):
+            if type is int:
+                value = config_section.getint(key, default=default,
+                                              minval=minval)
+            elif type is float:
+                value = config_section.getfloat(
+                    key, default=default, minval=minval, above=above
+                )
+            elif type == "floatlist":
+                value = config_section.getfloatlist(key, default=default)
+            elif isinstance(type, tuple) and len(type) == 4 and type[
+                0] == "lists":
+                value = config_section.getlists(
+                    key,
+                    seps=type[1],
+                    parser=type[2],
+                    count=type[3],
+                    default=default,
+                )
+            else:
+                value = config_section.get(key, default=default)
+            if not can_be_none and value is None:
+                raise self.servo.gcode.error(
+                    "nevermore_sensor_profile: '%s' has to be "
+                    "specified in [nevermore_sensor_profile %s %s]."
+                    % (
+                        key,
+                        self.servo.name,
+                        config_section.get_name(),
+                    )
+                )
+            return value
+
+        def _compute_section_name(self, profile_name):
+            return (
+                self.servo.name
+                if profile_name == "default"
+                else (
+                        "nevermore_sensor_profile " + self.servo.name + " " + profile_name
+                )
+            )
+
+        def _check_value_gcmd(
+                self,
+                name,
+                default,
+                gcmd,
+                type,
+                can_be_none,
+                minval=None,
+                maxval=None,
+        ):
+            if type is int:
+                value = gcmd.get_int(name, default, minval=minval,
+                                     maxval=maxval)
+            elif type is float:
+                value = gcmd.get_float(name, default, minval=minval,
+                                       maxval=maxval)
+            else:
+                value = gcmd.get(name, default)
+            if not can_be_none and value is None:
+                raise gcmd.error(
+                    "nevermore_sensor_profile: '%s' has to be specified." % name)
+            return value.lower() if type == "lower" else value
+
+        def init_default_profile(self):
+            return self._init_profile(self.servo.config, "default")
+
+        def cmd_NEVERMORE_SERVO_SET_CONTROL(self, gcmd):
+            verbose = self._check_value_gcmd("VERBOSE", "low", gcmd, "lower",
+                                             True)
+            profile_name = gcmd.get("PROFILE")
+            profile = self.profiles.get(profile_name)
+            control = self.servo.lookup_control(profile)
+            self.servo.set_control(control)
+            if verbose != "high" and verbose != "low":
+                return
+            self.servo.gcode.respond_info(
+                "Nevermore_Servo Profile [%s] loaded for [%s].\n"
+                % (profile["name"], self.servo.name)
+            )
+            if verbose == "high":
+                self.servo.gcode.respond_info(
+                    control.load_console_message())
 
     def __init__(self, nevermore: Nevermore, config: ConfigWrapper) -> None:
         self.name = f"{nevermore.name}_servo"
         self.nevermore = nevermore
         self.printer = nevermore.printer
+        self.gcode = self.printer.lookup_object("gcode")
         self.min_width = config.getfloat(
             "minimum_pulse_width", 0.001, above=0.0, below=SERVO_SIGNAL_PERIOD
         )
@@ -1451,6 +1624,7 @@ class NevermoreServo:
             above=self.min_width,
             below=SERVO_SIGNAL_PERIOD,
         )
+        self.min_angle = config.getfloat("minimum_servo_angle", 0.0)
         self.max_angle = config.getfloat("maximum_servo_angle", 180.0)
         self.angle_to_width = (self.max_width - self.min_width) / self.max_angle
         self.width_to_value = 1.0 / SERVO_SIGNAL_PERIOD
@@ -1470,7 +1644,39 @@ class NevermoreServo:
                 raise config.error(
                     f"Unknown ambient_temp_sensor '{temperature_sensor_name}' specified"
                 )
-        self.control = self.ControlCurve(temperature_sensor=self.temperature_sensor, config=config, servo_instance=self)
+        self.lock = threading.Lock()
+        self.profiles = {}
+        self.control_types = collections.OrderedDict(
+            {
+                "watermark": self.ControlBangBang,
+                "pid": self.ControlPID,
+                "manual": self.ControlManual,
+            }
+        )
+        self.pmgr = self.ProfileManager(self)
+        self.control = self.lookup_control(
+            self.pmgr.init_default_profile()
+        )
+        if self.control is None:
+            raise config.error(
+                "Default Nevermore_Servo Profile could not be loaded."
+            )
+        self.gcode.register_mux_command(
+            "NEVERMORE_SERVO_SET_CONTROL",
+            "SERVO",
+            self.name,
+            self.cmd_SET_SERVO,
+            desc=self.cmd_SET_SERVO_help,
+        )
+
+    def set_control(self, control):
+        with self.lock:
+            old_control = self.control
+            self.control = control
+        return old_control
+
+    def lookup_control(self, profile):
+        return self.control_types[profile["control"]](profile, self)
 
 
     def _get_pwm_from_angle(self, angle):
