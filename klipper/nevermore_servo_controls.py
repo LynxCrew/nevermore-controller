@@ -72,7 +72,7 @@ class NevermoreServoControls:
                 if SERVO_PROFILE_VERSION != profile_version:
                     logging.info(
                         "nevermore_servo_profile: Profile [%s] not compatible with this version\n"
-                        "of nevermore_sensor_profile. Profile Version: %d Current Version: %d "
+                        "of nevermore_servo_profile. Profile Version: %d Current Version: %d "
                         % (name, profile_version, SERVO_PROFILE_VERSION)
                     )
                     return None
@@ -86,9 +86,7 @@ class NevermoreServoControls:
             self.heating = False
 
         def temperature_callback(self, read_time, temp):
-            current_temp, target_temp = (
-                self.servo_controller.temperature_sensor.get_temp(read_time)
-            )
+            target_temp = self.servo_controller.target_temp
             if self.heating != self.reverse and temp >= target_temp + self.max_delta:
                 self.heating = self.reverse
             elif self.heating == self.reverse and temp <= target_temp - self.max_delta:
@@ -118,9 +116,7 @@ class NevermoreServoControls:
             self.prev_temp_integ = 0.0
 
         def temperature_callback(self, read_time, temp):
-            current_temp, target_temp = (
-                self.servo_controller.temperature_sensor.get_temp(read_time)
-            )
+            target_temp = self.servo_controller.target_temp
             time_diff = read_time - self.prev_temp_time
             # Calculate change of temperature
             temp_diff = temp - self.prev_temp
@@ -161,7 +157,7 @@ class NevermoreServoControls:
             self.incompatible_profiles = []
             # Fetch stored profiles from Config
             stored_profs = self.servo_controller.config.get_prefix_sections(
-                "nevermore_sensor_profile %s" % self.servo_controller.name
+                "nevermore_servo_profile %s" % self.servo_controller.name
             )
             for profile in stored_profs:
                 if len(self.servo_controller.name.split(" ")) > 1:
@@ -186,7 +182,7 @@ class NevermoreServoControls:
             else:
                 raise self.servo_controller.printer.config_error(
                     "Unknown control type '%s' "
-                    "in [nevermore_sensor_profile %s %s]."
+                    "in [nevermore_servo_profile %s %s]."
                     % (control, self.servo_controller.name, name)
                 )
 
@@ -220,8 +216,8 @@ class NevermoreServoControls:
                 value = config_section.get(key, default=default)
             if not can_be_none and value is None:
                 raise self.servo_controller.gcode.error(
-                    "nevermore_sensor_profile: '%s' has to be "
-                    "specified in [nevermore_sensor_profile %s %s]."
+                    "nevermore_servo_profile: '%s' has to be "
+                    "specified in [nevermore_servo_profile %s %s]."
                     % (
                         key,
                         self.servo_controller.name,
@@ -235,7 +231,7 @@ class NevermoreServoControls:
                 self.servo_controller.name
                 if profile_name == "default"
                 else (
-                    "nevermore_sensor_profile "
+                    "nevermore_servo_profile "
                     + self.servo_controller.name
                     + " "
                     + profile_name
@@ -260,7 +256,7 @@ class NevermoreServoControls:
                 value = gcmd.get(name, default)
             if not can_be_none and value is None:
                 raise gcmd.error(
-                    "nevermore_sensor_profile: '%s' has to be specified." % name
+                    "nevermore_servo_profile: '%s' has to be specified." % name
                 )
             return value.lower() if type == "lower" else value
 
@@ -274,6 +270,7 @@ class NevermoreServoControls:
         self.gcode = self.printer.lookup_object("gcode")
         self.last_value = 0.0
         temperature_sensor_name = config.get("chamber_temperature_sensor", None)
+        self.target_temp = config.getfloat("target_temp", 50)
         self.temperature_sensor = None
         if temperature_sensor_name is not None:
             try:
@@ -282,7 +279,7 @@ class NevermoreServoControls:
                 )
             except Exception:
                 raise config.error(
-                    f"Unknown ambient_temp_sensor '{temperature_sensor_name}' specified"
+                    f"Unknown chamber_temp_sensor '{temperature_sensor_name}' specified"
                 )
         self.temperature_sensor.setup_callback(self.temperature_callback)
 
@@ -308,6 +305,9 @@ class NevermoreServoControls:
         self.set_control(control)
 
         gcmd.respond_info("Nevermore_Servo: Profile [%s] loaded" % profile["name"])
+
+    def get_control(self):
+        return self.control
 
     def set_control(self, control):
         with self.lock:

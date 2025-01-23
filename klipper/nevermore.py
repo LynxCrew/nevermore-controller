@@ -973,10 +973,12 @@ class Nevermore:
     def cmd_NEVERMORE_VENT_SERVO_SET(self, gcmd: GCodeCommand) -> None:
         perc: Optional[float] = gcmd.get_float("PERCENT", None, 0, 1)
         hold: Optional[float] = gcmd.get_float("HOLD_FOR", None, above=0)
-        control: Optional[float] = gcmd.get_float("CONTROL", None)
+        control: Optional[str] = gcmd.get_float("CONTROL", None)
+        target_temp: Optional[float] = gcmd.get_float("TARGET_TEMP", None)
+        if target_temp is not None:
+            self.servo_controls.target_temp = target_temp
         if control is not None:
             self.servo_controls.load_profile(gcmd, control)
-            return
         if hold is not None and perc is None:
             gcmd.error("`HOLD_FOR` cannot be used w/o `PERCENT`")
         self.servo_controls.set_control(None)
