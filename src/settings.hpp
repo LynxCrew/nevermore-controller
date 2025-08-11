@@ -6,6 +6,10 @@
 #include "utility/fan_policy_thermal.hpp"
 #include "utility/servo.hpp"
 #include <array>
+#include <concepts>
+#include <limits>
+#include <type_traits>
+#include <utility>
 
 // Disables saving/loading settings from app storage. Useful for test builds.
 #ifndef NEVERMORE_SETTINGS_PERSISTENCE
@@ -59,9 +63,59 @@ enum class DisplayUI : uint8_t {
     CIRCLE_240_NO_PLOT = 2,
 };
 
+// NB: All flags are considered by default. See `FlagBitSet`.
+// NOLINTNEXTLINE(readability-enum-initial-value) doesn't recongise `COUNT`/`NUM` idiom
+enum class Flags : uint8_t {
+    // If a sensor in a `FilterSide` is missing, then try to fall back to the other side's sensor.
+    sensors_fallback = 0,
+    // StealthMax MCU is positioned inside the exhaust airflow.
+    // Disabled by default because not all Nevermores are StealthMaxes.
+    sensors_fallback_exhaust_mcu = 1,
+    // If *NOT* set, use max expected variance of either side before updating VOC GIA
+    sensors_voc_expected_variance_independent = 2,
+    MAX
+};
+
+// All flags must be off by default to correctly receive default values.
+// This is a limitation of using a bitset and the design of the setting system
+// which doesn't have bit-level granularity.
+struct [[gnu::packed]] FlagBitSet {
+    static constexpr uint8_t FLAGS_MAX = 64;
+    static_assert(std::to_underlying(Flags::MAX) <= FLAGS_MAX);
+
+    bool operator()(Flags const flag) const {
+        return (bitset & (uint64_t(1) << std::to_underlying(flag))) != 0;
+    }
+
+    bool operator==(FlagBitSet const&) const = default;
+
+    uint64_t bitset = 0;
+};
+static_assert(sizeof(FlagBitSet) == 8);
+
+template <std::unsigned_integral Store, float Lo, float Hi>
+struct [[gnu::packed]] PeriodSecInverse {
+    static_assert(Lo < Hi);
+
+    PeriodSecInverse(float period)
+            : store(Store(
+                      std::numeric_limits<Store>::max() * std::clamp((period - Lo) / (Hi - Lo), 0.f, 1.f))) {}
+
+    [[nodiscard]] operator float() const {
+        return Lo + (Hi - Lo) * ((1.f / std::numeric_limits<Store>::max()) * store);
+    }
+
+    bool operator==(PeriodSecInverse const&) const = default;
+
+private:
+    Store store = 0;
+};
+
 // Layout **cannot** change. This would break back-compatibility.
 // Fields **can** be appended w/o bumping the header version.
 // Padding **must** be explicitly declared using `Padding<N>`.
+//  !!  Generally cannot remove padding once added b/c it would cause the
+//      replacing fields to be incorrectly default initialised.
 //  (initialisation of padding affects CRC and is poorly standardised)
 struct [[gnu::packed]] SettingsV0 {
     template <size_t N>
@@ -74,7 +128,7 @@ struct [[gnu::packed]] SettingsV0 {
     BLE::Percentage8 fan_power_automatic = 100;    // not-known -> disallowed
     BLE::Percentage8 fan_power_coefficient = 100;  // not-known -> disallowed
     std::array<SensorCalibrationBlob, 2> voc_calibration{};
-    VOCIndex voc_gating_threshold = 240;  // not-known -> disallowed
+    VOCIndex voc_gating_threshold = 250;  // not-known -> disallowed
     DisplayHW display_hw = DisplayHW::GC9A01_240_240;
     DisplayUI display_ui = DisplayUI::CIRCLE_240_CLASSIC;
     Padding<1> _0{};
@@ -83,6 +137,10 @@ struct [[gnu::packed]] SettingsV0 {
     Pins pins = PINS_DEFAULT;
     ServoRange servo_vent;
     Padding<3> _1{};  // HACK: cannot remove, would screw with def-init of new members
+    FlagBitSet flags;
+    PeriodSecInverse<uint8_t, 0.f, 1.f> fan_kick_start_sec = 0.5f;
+    BLE::Percentage8 fan_power_min = 17.5;           // Delta BFB0712HF
+    BLE::Percentage8 fan_power_kick_start_min = 18;  // Delta BFB0712HF
 
     // replaces valid fields from RHS into self
     void merge_valid_fields(SettingsV0 const&);

@@ -38,9 +38,16 @@ from bleak.backends.service import BleakGATTService
 from typing_extensions import override
 
 if typing.TYPE_CHECKING:
+    from typing import dataclass_transform
+
     LoggerAdapter = logging.LoggerAdapter[logging.Logger]
 else:
     LoggerAdapter = logging.LoggerAdapter
+
+    # `dataclass_transform` added in py 3.11
+    def dataclass_transform(*x, **xs):
+        return lambda x: x
+
 
 _A = TypeVar("_A")
 _Float = TypeVar("_Float", bound=float)
@@ -112,6 +119,7 @@ UUID_SERVICE_SERVO = UUID("8959bb3e-3063-4a46-9b9a-69fdbc327f1c")
 UUID_CHAR_GATT = short_uuid(0x2803)
 UUID_CHAR_PERCENT8 = short_uuid(0x2B04)
 UUID_CHAR_COUNT16 = short_uuid(0x2AEA)
+UUID_CHAR_TIMEMILLI24 = short_uuid(0x2B15)
 UUID_CHAR_TIMESEC16 = short_uuid(0x2B16)
 UUID_CHAR_SERIAL_NUMBER = short_uuid(0x2A25)
 UUID_CHAR_HARDWARE_REVISION = short_uuid(0x2A27)
@@ -243,26 +251,26 @@ class Transport:
     class Attribute:
         @abstractmethod
         async def write(self, blob: bytes) -> None:
-            raise NotImplemented
+            raise NotImplementedError
 
         @abstractmethod
         async def read(self) -> bytes:
-            raise NotImplemented
+            raise NotImplementedError
 
         @abstractmethod
         def has_property(self, prop: CharacteristicProperty) -> bool:
-            raise NotImplemented
+            raise NotImplementedError
 
         @property
         @abstractmethod
         def handle(self) -> int:
-            raise NotImplemented
+            raise NotImplementedError
 
     class Service:
         # POST CONDITION: ordered by handle #
         @abstractmethod
         def all(self, uuid: Optional[UUID] = None) -> Iterable['Transport.Attribute']:
-            raise NotImplemented
+            raise NotImplementedError
 
         def many(
             self,
@@ -287,16 +295,16 @@ class Transport:
     # May only be used if this instance owns the underlying transport mechanism
     @abstractmethod
     async def close(self) -> None:
-        raise NotImplemented
+        raise NotImplementedError
 
     @property
     @abstractmethod
     def all(self) -> Iterable['Transport.Service']:
-        raise NotImplemented
+        raise NotImplementedError
 
     @abstractmethod
     def service(self, uuid: UUID) -> Service:
-        raise NotImplemented
+        raise NotImplementedError
 
     def __call__(
         self,
@@ -577,7 +585,10 @@ class CommBindings:
             self.fan_power_passive,
             self.fan_power_auto,
             self.fan_power_coeff,
-        ) = self.fan.many(UUID_CHAR_PERCENT8, 4, {P.WRITE})
+            self.fan_power_min,
+            self.fan_power_kick_start_min,
+        ) = self.fan.many(UUID_CHAR_PERCENT8, 6, {P.WRITE})
+        self.fan_kick_start_time = self.fan(UUID_CHAR_TIMEMILLI24, {P.WRITE})
         self.ws2812_length = self.ws2812(UUID_CHAR_COUNT16, {P.WRITE})
         self.ws2812_update = self.ws2812(
             UUID_CHAR_WS2812_UPDATE, {P.WRITE_WITHOUT_RESPONSE}
@@ -619,13 +630,13 @@ def _clamp(x: _Float, min: _Float, max: _Float) -> _Float:
 class Command:
     @abstractmethod
     async def dispatch(self, comm: CommBindings):
-        raise NotImplemented
+        raise NotImplementedError
 
 
 class CommandSimple(Command):
     @abstractmethod
     def params(self) -> bytes:
-        raise NotImplemented
+        raise NotImplementedError
 
 
 class CommandSimplePercent(CommandSimple):
@@ -640,6 +651,7 @@ class CommandSimplePercent(CommandSimple):
         return int(p * 2).to_bytes(1, "little")
 
 
+@dataclass_transform(frozen_default=True)
 def cmd_simple(dispatcher: Callable[[CommBindings], Transport.Attribute]):
     def wrap(cls: Type[CommandSimple]):
         class Derived(dataclass(frozen=True)(cls)):
@@ -669,6 +681,25 @@ class CmdFanPowerAuto(CommandSimplePercent):
 @cmd_simple(lambda x: x.fan_power_coeff)
 class CmdFanPowerCoeff(CommandSimplePercent):
     percent: float
+
+
+@cmd_simple(lambda x: x.fan_power_min)
+class CmdFanPowerMin(CommandSimplePercent):
+    percent: float
+
+
+@cmd_simple(lambda x: x.fan_power_kick_start_min)
+class CmdFanPowerKickStartMin(CommandSimplePercent):
+    percent: float
+
+
+@cmd_simple(lambda x: x.fan_kick_start_time)
+class CmdFanKickStartTime(CommandSimple):
+    time_sec: float
+
+    @override
+    def params(self) -> bytes:
+        return BleAttrWriter().time_milli_24(self.time_sec * 1000).value
 
 
 @cmd_simple(lambda x: x.fan_thermal_limit)
@@ -849,6 +880,13 @@ def is_lost_connection_exception(e: Exception, is_connecting: bool = False) -> b
         if "not connected" in msg:
             return True
         if "device disconnected" in msg:
+            return True
+
+    if isinstance(e, KeyError):
+        # HACK: bleak is a pile of shit and will occasionally seem to index a
+        #       path that isn't in one of its dicts.
+        #       e.g. '/org/bluez/hci0/dev_28_CD_C1_0B_7B_64/service0082'
+        if "/org/bluez/hci" in str(e).lower():
             return True
 
     return False
@@ -1070,6 +1108,9 @@ class BleAttrWriter:
 
     def temperature(self, t: Optional[float]):
         return self._presentation_format(t, 2, 2, 0x8000, signed=True)
+
+    def time_milli_24(self, t: Optional[float]):
+        return self._presentation_format(t, 3, 3, 0xFFFFFF, signed=False)
 
     def percentage16_10(self, t: Optional[float]):
         return self._presentation_format(t, 2, 2, 0xFFFF, signed=False)

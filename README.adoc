@@ -41,7 +41,7 @@ NOTE: Sensors are available in various sizes, form factors, and pin orders. Chec
 
 NOTE: xref:supported-sensors[Many sensor boards are multi-function.] e.g. you'll likely only need one board for temperature/humidity.
 
-The only hard requirement is a Pico W.
+The only hard requirement is a RP2040 board.
 Everything else can be omitted at the cost of reduced functionality.
 
 The VOC sensors are critical; they measure the relevant contaminants we wish to filter out.
@@ -65,6 +65,8 @@ footnote:[Only supported to detect when someone inadvertently uses a BMP280 inst
 | HTU2xD            | Humidity, Temperature             |
 | SGP30             | Volatile Organic Compounds        | Deprecated. footnote:[SGP40s are preferred, but SGP30s should still be functional.]
 | SGP40             | Volatile Organic Compounds        |
+| SHT4x             | Humidity, Temperature             |
+| ZMOD4410          | Volatile Organic Compounds        | Experimental
 |===
 
 [#supported-displays]
@@ -91,9 +93,9 @@ NOTE: Make sure you meet the xref:klipper-requirements[Klipper requirements].
 
 Instructions:
 
-. Build or https://github.com/SanaaHamel/nevermore-controller/releases[download the controller `uf2` binary], flash to Pico W.
+. Build or https://github.com/SanaaHamel/nevermore-controller/releases[download the controller `uf2` binary], flash to the RP2040 board (e.g. Pico W).
 +
-The Pico W's LED should start flashing once the controller has booted.
+If the board has a simple on-board LED, then it should start flashing once the controller has booted.
 
 . SSH into the printer. Execute the following to install the Klipper module:
 +
@@ -133,18 +135,23 @@ mcu 'mcu': Starting CAN connect
 ... BLAH
 ... BLAH
 ```
-. If you've flashed a OTA-capable UF2 to the controller (v0.3+) you can update it wirelessly.
+
+. [Optional] Add support for chamber temperature waiting.
+.. Add xref:NEVERMORE_TEMPERATURE_WAIT[`NEVERMORE_TEMPERATURE_WAIT`] to your `PRINT_START` macro. xref:NEVERMORE_TEMPERATURE_WAIT_EXAMPLE[(See here for example.)]
+.. Update slicer profiles' `PRINT_START` to use the new 'CHAMBER' parameter.
 
 . **Calibrate the sensors.** xref:doc/voc.adoc#baseline-calibration[See the calibration section in the VOC Guide.]
 
+. You can apply updates the controller without removing it from the filter. xref:guide-updating[See the Updating Guide.]
 
-Configured Nevermores will automatically turn on/off depending on whether any extruder heaters are active. They will also turn on/off depending on sensor values and configured fan policies.
+
+Configured Nevermores will automatically turn xref:klipper-print-mode[on/off depending on whether any extruder heaters are active]. They will also turn on/off xref:fan-control[depending on sensor values and configured fan policies].
 
 
 [#guide-updating]
 == Updating Guide For Dummies
 
-If you've flashed a OTA-capable UF2 to the controller (v0.3+) you can update it wirelessly. The process is simple:
+If you've flashed a OTA-capable UF2 to the controller (v0.3+) you can update it without removing it from the filter. The process is simple:
 ```sh
 # switch to the nevermore-controller installation
 cd ~/nevermore-controller
@@ -309,12 +316,12 @@ When a sensor is found, there will be a line saying so (e.g. `Found SGP30`, or `
 The controller is in bootloader mode. If the image isn't corrupted it'll restart in application mode in about 60 seconds if you leave it alone. If it is corrupted, it won't reboot and will stay in bootloader mode to let you upload a valid image using the update tool.
 
 [#faq-is-the-bluetooth-on]
-* **The controller is properly flashed (e.g. the LED is blinking) but my Klipper can't connect to it.**
+* **The controller is properly flashed (e.g. the LED is blinking) but Klipper can't connect to it using BlueTooth.**
 +
 There are several possible causes:
 +
-. Verify sure the Bluetooth is turned on & working.
-If you're using Linux, follow the you can use the following to check
+. Verify sure BlueTooth is turned on & working.
+If you're using Linux, you can use the following to verify:
 +
 ```
 ⋊> ~ # ensure BT is on
@@ -329,10 +336,10 @@ Discovery started
 ^C⏎
 ```
 +
-If `bluetoothctl` doesn't work or the scan doesn't list any Bluetooth devices then there's something wrong with the OS's configuration and/or Bluetooth adapter.
+If `bluetoothctl` doesn't work or the scan doesn't list any BlueTooth devices then there's something wrong with the OS's configuration and/or BlueTooth adapter.
 You'll need to fix that first (see other FAQ entries for some ideas).
 +
-. Verify that the Bluetooth adapter can connect to the device. xref:xref:find-the-bt-address-bluetoothctl[If you're on Linux, follow this procedure to find and connect directly to the controller.]
+. Verify that the BlueTooth adapter can connect to the device. xref:xref:find-the-bt-address-bluetoothctl[If you're on Linux, follow this procedure to find and connect directly to the controller.]
 . Verify that *both* the Klipper installation and the controller are the same release version.
 +
 xref:guide-updating[Easiest way ensure this is to follow the update guide.]
@@ -346,18 +353,21 @@ Exception: 4553d138-1d00-4b6f-bc42-955a89cf8c36 (Handle: 67): Unknown doesn't ha
 Then you probably have a mismatch between the controller and Klipper module.
 
 +
-If you've checked all of the above and you still have exceptions in the printer log then you may go find me on the Nevermore Discord for help.
+If you've checked all of the above and you still have exceptions in the printer log then you may go find Sanaa on the Nevermore Discord for help.
 
 [#faq-2.4ghz-interference]
-* **I'm having trouble getting a reliable connection to the controller. Sometimes it works, sometimes it just doesn't connect.**
+* **I'm having trouble getting a reliable connection using BlueTooth to the controller. Sometimes it works, sometimes it just doesn't connect.**
 +
 (This is specifically for the case where the printer log does *not* show any exceptions mentioning bluetooth characteristics; xref:bluez-bad-cache[otherwise see below].)
 +
-There might be interference on the 2.4 GHz wireless band. If the Klipper host is connected via WiFi make sure it's using 5.0 GHz or try using Ethernet instead.
+There might be interference on the 2.4 GHz wireless band. Verify the following:
 +
-You can test to see if the problem is specific to the Klipper host by xref:find-the-bt-address-nrf-connect[connecting with another machine, such as the pocket supercomputer].
+** If the Klipper host is connected via WiFi make sure it's using 5.0 GHz, or use Ethernet instead.
 +
-This can also happen in environments with absurd number of wireless devices or faulty microwave ovens.
+** If the Klipper host is a Raspberry Pi, make sure the Pi's USB C port is not used. It is not properly shielded and emits EMI.
++
+You can test to see if the problem is specific to the Klipper host by xref:find-the-bt-address-nrf-connect[connecting with another machine, such as a pocket supercomputer].
+
 
 [#bluez-bad-cache]
 * **The printer log or nevermore tools show exceptions/errors mentioning missing or unknown 'characteristics' and it can't connect to the controller.**
@@ -374,7 +384,7 @@ Try the following, in order:
 +
 . Disable and remove BlueZ GATT caches.
 +
-BlueZ (Linux's Bluetooth subsystem) has a known bug where it can store corrupt BLE attribute caches. footnote:[Observed in versions up to 5.66.] You can disable and clear this cache to work around this bug:
+BlueZ (Linux's BlueTooth subsystem) has a known bug where it can store corrupt BLE attribute caches. footnote:[Observed in versions up to 5.66.] You can disable and clear this cache to work around this bug:
 +
 .. ** Disable Caching**
 +
@@ -470,9 +480,7 @@ See `--help` for more options.
 
 ==== Default Assignments
 
-WARNING: GPIO 0 and 1 are currently hardcoded for UART. They cannot be used in any pin assignments.
-
-WARNING: The default assignments are tentative and will probably change after we get some feedback as to which layouts work best in practice.
+WARNING: GPIO 0 and 1 are reserved for UART. They cannot be used in any pin assignments.
 
 [#default-pin-table-pico-w]
 .Default Pin Assignments - Pico W
@@ -492,11 +500,38 @@ WARNING: The default assignments are tentative and will probably change after we
 |10 | Photocatalytic Control (PWM)
 |12 | NeoPixel - Data
 |13 | Fan - PWM
+|14 | Vent Servo PWM
 |15 | Fan - Tachometer
 |18 | Exhaust - I2C SDA
 |19 | Exhaust - I2C SCL
 |20 | Intake - I2C SDA
 |21 | Intake - I2C SCL
+|===
+
+[#default-pin-table-waveshare-rp2040-zero]
+.Default Pin Assignments - Waveshare RP2040 Zero
+[%autowidth]
+|===
+|GPIO | Function
+|0    | UART - TX
+|1    | UART - RX
+|2    | Display - GC9A01 - SPI SCK
+|3    | Display - GC9A01 - SPI TX
+|4    | Display - GC9A01 - SPI RX (not used, for future hardware)
+|5    | Display - GC9A01 - Command
+|6    | Display - GC9A01 - Reset
+|7    | Display - Backlight Brightness PWM
+|8    | Display Touch - CST816S - Interrupt
+|9    | Display Touch - CST816S - Reset
+|11   | Photocatalytic Control (PWM)
+|12   | NeoPixel - Data
+|13   | Vent Servo PWM
+|14   | Fan - Tachometer
+|15   | Fan - PWM
+|26   | Intake - I2C SDA
+|27   | Intake - I2C SCL
+|28   | Exhaust - I2C SDA
+|29   | Exhaust - I2C SCL
 |===
 
 [#default-pin-table-waveshare-touch-lcd-1.28]
@@ -533,7 +568,7 @@ This can be done using xref:NEVERMORE_RESET[`NEVERMORE_RESET`], if you are conne
 [#klipper-requirements]
 === Requirements
 
-* xref:faq-is-the-bluetooth-on[Working BlueTooth on the Klipper host.]
+* xref:faq-is-the-bluetooth-on[Working BlueTooth on the Klipper host. (If using BlueTooth.)]
 * Klipper using Python 3.7+
 * KIAUH-like installation (required by installation script)
 
@@ -553,6 +588,10 @@ This example configuration is intended for quickly getting up and running. You c
 Check out the full documentation section (just after this) after you've tested everything works with the minimal configuration; there are many useful options for customisation.
 
 ```ini
+# This minimal config is *MINIMAL*.
+# There are many extra features that might be worth checking out!
+# (e.g. chamber temperature waiting)
+
 [nevermore]
 # If you're using USB instead of BT, uncomment and specify the correct serial device.
 # WARNING: Make sure it's the `-if02` interface, not `-if00`.
@@ -566,7 +605,13 @@ led_chain_count: 16
 # These `fan_power_*` entries are for a DELTA BFB0712HF (StealthMax BOM)
 # If you have a different fan then play with these numbers to the satisfaction.
 # See full config documentation for details.
+# (e.g. See `fan_power_automatic` if you'd prefer very quiet background filtering.)
 fan_power_coefficient: 0.8  # lower max power to keep things much more quiet
+
+# If the fan isn't a DELTA BFB0712HF (StealthMax BOM), you'll probably want to add
+#   fan_power_minimum: ???
+#   fan_power_kick_start_minimum: ???
+# See full-doc for details and some common values.
 
 # Optional
 # This 'temperature' sensor only serves to draw the intake VOC index on
@@ -665,12 +710,40 @@ serial: <device path>
 #fan_power_passive: 0
 
 # float \in [0, 1] - Fan power used when the automatic fan policy is active.
+# Useful if you'd prefer slower but quieter background/automatic filtering.
+# NOTE: Automatic fan power is scaled based on several factors. See Fan Control.
 #fan_power_automatic: 1
 
 # float \in [0, 1] - Coefficient applied to the fan power.
-# i.e. Limits the maximum speed of the fan. Useful for things like managing noise.
+# i.e. Limits the maximum speed of the fan. Useful for managing noise.
 # e.g. At 0.75, requesting 100% power will run the fan at 75% power.
 #fan_power_coefficient: 1
+
+# float \in [0, 1] - Absolute minimum power required to keep the fan spinning once kick-started.
+# This will vary by fan model, and possibly by fan instance.
+# This is an absolute power value; it is not scaled by any factor. (e.g. thermal limit, coefficient, etc)
+# Values for commonly used fan models:
+# |===
+# | Fan Model         | Suggested Value |
+# | DELTA BFB0712HF   |           0.175 |
+# |===
+#fan_power_minimum: 0.175
+
+# float \in [0, 1] - Absolute minimum power required to kick-start the fan.
+# This will vary by fan model, and possibly by fan instance.
+# This is an absolute power value; it is not scaled by any factor. (e.g. thermal limit, coefficient, etc)
+# Values for commonly used fan models:
+# |===
+# | Fan Model         | Suggested Value |
+# | DELTA BFB0712HF   |            0.18 |
+# |===
+#fan_power_kick_start_minimum: 0.18
+
+# float \in [0, 1], seconds - How long to kick-start the fan at 100%
+# Fan control currently updates at 10 Hz. Consequently, values have an effective
+# granularity of 0.1s. This may change in the future.
+# In practice, simply set it to the desired delay; it'll be round up in the worst case.
+#fan_kick_start_time: 0.5
 
 
 # Fan Policy
@@ -679,8 +752,8 @@ serial: <device path>
 # seconds, how long to keep filtering after the policy would otherwise stop
 #fan_policy_cooldown: 900
 # voc index, 0 to disable, filter if any sensor meets this threshold
-# NB: if < 200 then fan will engage when in the 'nominal' region (see VOC guide)
-#fan_policy_voc_passive_max: 200
+# NB: if <= 200 then fan will engage when in the 'nominal' region (see VOC guide)
+#fan_policy_voc_passive_max: 250
 # voc index, 0 to disable, filter if the intake exceeds exhaust by at least this much
 # Not recommended; `voc_passive_max` is generally more reliable and useful.
 #fan_policy_voc_improve_min: 0
@@ -700,6 +773,15 @@ serial: <device path>
 #fan_thermal_limit_coefficient: 0
 
 
+# Print-Mode Policy
+
+# float, Celsius, minimum target bed temperature for print-mode to engage
+# Useful if you sometimes use PLA w/ the enclosure open and you don't want it
+# turning on print mode.
+# (Or avoiding the fan turning on when doing nozzle changes.)
+# print_mode_min_bed_target:
+
+
 # Sensor Settings
 
 # voc index \in [175, 500], threshold where the system stops adjusting the
@@ -708,12 +790,10 @@ serial: <device path>
 # brands.
 # Set this threshold to the 'typical' VOC index observed mid print.
 # Setting this *too* low will prevent the system from adjusting to normal
-# air quality variations.
+# air quality variations. Advised not to set < 225.
 # If you print with multiple materials/brands, see the G-Code command
 # `NEVERMORE_VOC_GATING_THRESHOLD_OVERRIDE`.
-# (or as close as possible given the minimum)
-# voc index \in [175, 500]
-#voc_gating_threshold: 240
+#voc_gating_threshold: 250
 
 
 # Display Options
@@ -754,6 +834,41 @@ serial: <device path>
 # and don't have any dedicated temperature sensors.
 #sensors_fallback_exhaust_mcu: false
 
+# Use independent expected variance estimations for VOC sensors.
+# Enable this option if the build's VOC sensors have different expected variances
+# when exposed to the same environment.
+#   e.g. build uses different VOC sensor types for intake and exhaust.
+#
+# This option is disabled by default, causing the system to use the max of
+# intake's/exhaust's expected variance as the effective expected variance for both.
+# Having a shared variance bound is desirable useful for builds where the
+# intake/exhaust VOC sensors have very similar expected variances when exposed
+# to the same environment.
+# Why? Two reasons:
+# 1.  Different expected variances map the same change in raw response to
+#     different index scales. Recall that linear component of the VOC index is:
+#       `VOC_index_linear = (raw - expected_mean) / expected_variance`
+#     (A non-linear mapping is then used to remap `[-inf, inf]` to `[0, 500]`)
+#
+#     A shared expected variance means that the scale of the VOC indices are now
+#     equivalent between intake/exhaust.
+#     This still doesn't make them directly comparable, see `doc/voc.adoc`, but
+#     will make it behave *more* intuitively.
+#
+# 2.  Intake/exhaust likely have different ambient airflows when the filter is
+#     idle due to their positioning within the filter.
+#       e.g. StealthMax's exhaust filter is inside the central hub.
+#     Restricted airflow means that VOCs diffuse their way to the affected sensor,
+#     baffling fluctuations and reducing the variation the sensor experiences.
+#
+#     tl;dr:  The intake and exhuast sensor might have the same raw response to
+#             identical environments, but they don't inhabit the same environment.
+#
+# One might ask: "Why not do the same for the expected mean?"
+# In practice, Sanaa observed notable device-to-device variation in the
+# expected mean, but not the expected variance.
+#sensors_voc_expected_variance_independent: false
+
 
 # MOSTLY OBSOLETE.
 # Mainsail 2.7.1+ and Fluidd 1.31.0+ both have dedicated support for Nevermores.
@@ -789,6 +904,7 @@ nevermore: <omitted, e.g. `nevermore custom_names_allowed`>
 === Klipper Object Naming
 
 Nevermore instances have two kinds of names:
+
 * Short names: Used by GCode commands (i.e. `NEVERMORE=<short name>`).
 * Full Klipper names: Used by the Klipper config files.
 
@@ -810,8 +926,58 @@ When referring to a Nevermore for LED effects, use the full Klipper name and rep
 
 The following command can be used to influence behaviour at runtime.
 
-These typically require a `NEVERMORE=` parameter to specify which Nevermore to interact with.
-At this time, there can only be one Nevermore controller, which is named `nevermore`.
+These typically have an optional `NEVERMORE=` parameter to specify which Nevermore to interact with.
+If no `NEVERMORE=` argument is provided then the command will apply to all Nevermores.
+
+[#NEVERMORE_TEMPERATURE_WAIT]
+==== NEVERMORE_TEMPERATURE_WAIT
+
+Command:
+```
+NEVERMORE_TEMPERATURE_WAIT [MINIMUM=<celsius>] [MAXIMUM=<celsius>] [UNAVAILABLE_TIMEOUT=<seconds, inf>]
+```
+
+Waits until either:
+
+* All Nevermores are 'available' and their temperatures are within the range `[MINIMUM, MAXIMUM]`.
++
+Intake temperature is used when available, otherwise exhaust is used.
+
+* There exists an 'unavailable' Nevermore and `UNAVAILABLE_TIMEOUT` seconds have elapsed.
+
+A Nevermore is considered 'available' IFF it is connected and it has 1+ operating temperature sensors.
+
+This command requires at least 1 Nevermore defined.
+
+Suggested use: Wait for chamber temperature to reach target in `PRINT_START`.
+
+[#NEVERMORE_TEMPERATURE_WAIT_EXAMPLE]
+===== Example Setup
+
+Rough sketch of a `PRINT_START` macro with chamber temperatures.
+
+```
+[gcode_macro PRINT_START]
+#   Use PRINT_START for the slicer starting script - please customise for your slicer of choice
+gcode:
+    # Parameters
+    {% set TEMP_BED       = params.BED      |float %}
+    {% set TEMP_EXTRUDER  = params.EXTRUDER |float %}
+    # default to 30c if parameter isn't specified
+    {% set TEMP_CHAMBER   = params.CHAMBER  |default(30)|float %}
+
+    ... # existing code
+
+    # wait for bed to reach target temperature
+    M190 S{TEMP_BED}
+    # once the bed reached target, wait for the chamber to reach target
+    # (if a nevermore is still unavailable after 10+ min then stop waiting, hopefully the chamber reached target)
+    NEVERMORE_TEMPERATURE_WAIT MINIMUM={TEMP_CHAMBER} UNAVAILABLE_TIMEOUT=600
+    # wait 30s for things to stabilise
+    G4 P30000
+
+    ... # rest of existing code
+```
 
 
 ==== NEVERMORE_VENT_SERVO_SET
@@ -834,7 +1000,6 @@ NEVERMORE_STATUS [NEVERMORE=<name>]
 ```
 
 Prints the Nevermores' current status to the console.
-Lists all Nevermores unless a specific one is named using`NEVERMORE=`.
 Not terribly useful for most things, but helpful if you're not sure it's connected
 yet. (e.g. when used with `connection_initial_timeout: 0`)
 
@@ -846,7 +1011,6 @@ NEVERMORE_REBOOT [NEVERMORE=<name>]
 ```
 
 Reboots Nevermores, if connected. Persistent settings will be saved.
-Applies to all Nevermores unless a specific one is named using`NEVERMORE=`.
 
 Probably easier than power cycling the whole printer.
 
@@ -862,7 +1026,6 @@ NEVERMORE_RESET FLAGS=<int> [NEVERMORE=<name>]
 
 Resets persistent settings to defaults.
 It is deliberately under-documented to dissuade causal use.
-Applies to all Nevermores unless a specific one is named using`NEVERMORE=`.
 
 Policy settings can can be reset to default using `FLAGS=2`.
 
@@ -878,7 +1041,6 @@ WARNING: Calibration is automatically suspended by the Klipper module when any e
 
 Enables/disables the VOC sensor calibration.
 *Sensor calibration should be enabled whenever the printer isn't printing.*
-Applies to all Nevermores unless a specific one is named using`NEVERMORE=`.
 
 Sensor calibration should *only* be disabled when the printer is printing. Doing
 this prevents the VOC sensor from mistaking low VOC emissions for sensor drift
@@ -898,7 +1060,6 @@ NEVERMORE_VOC_GATING_THRESHOLD_OVERRIDE [NEVERMORE=<name>] [THRESHOLD=<int \in [
 ```
 
 Overrides the VOC gating threshold (see `voc_gating_threshold` in the Klipper config). Omit the `THRESHOLD` parameter to clear any existing override.
-Applies to all Nevermores unless a specific one is named using`NEVERMORE=`.
 
 This is intended for setups where the slicer specifies the filament type using a user-defined G-Code macro (e.g. `SET_MATERIAL ABS`), and you would like to temporarily set the VOC gating threshold for a specific material/filament.
 
@@ -914,7 +1075,6 @@ NEVERMORE_SENSOR_CALIBRATION_CHECKPOINT [NEVERMORE=<name>]
 
 Force sensors to checkpoint their calibration.
 The checkpoints will be persisted after a brief delay (under 20 seconds).
-Applies to all Nevermores unless a specific one is named using`NEVERMORE=`.
 
 Useful if you must save the current calibration immediately instead of waiting
 for the usual 24h periodic checkpoint.
@@ -929,7 +1089,6 @@ NEVERMORE_SENSOR_CALIBRATION_RESET [NEVERMORE=<name>]
 ```
 
 Resets the sensor calibrations. Does not immediately persist this reset calibration, but it will eventually be applied when the checkpoint process triggers.
-Applies to all Nevermores unless a specific one is named using`NEVERMORE=`.
 
 Useful when moving the printer to a new environment.
 
@@ -1065,13 +1224,31 @@ image::doc/README-nrf-connect.png[nRC Connect Screenshot,256]
 
 You can test if the controller is accepting new connections by pressing the 'connect' button.
 
+[#klipper-print-mode]
+=== "Print Mode"
+
+The Klipper module enters/exits "print mode" based on whether any extruder is turned on (i.e. has a non-zero target temperature).
+
+This allows Nevermores to immediately begin filtering before VOC levels exceed thesholds and helps prevent calibration drift that could occur with long prints using low-VOC filaments.
+
+On entering "print mode":
+
+* xref:fan-control[Nevermore fan overrides are set to 100%.]
+* xref:NEVERMORE_VOC_CALIBRATION[VOC calibration is suspended.]
+
+On exiting "print mode":
+
+* Nevermores return to automatic control.
+* VOC calibration is resumed.
+
+These commands are automatically re-issued to a controller when they reconnect after losing connection.
 
 [#fan-control]
 === Fan Control & Macros
 
 There are two modes of operation:
 
-* Automatic - Fan power is managed by the controller based on its fan policy (xref:klipper-config-full[see here]).
+* Automatic - Fan power is managed by the controller based on its fan policy (xref:klipper-config-full[see here]) and the current VOC index readings (see below).
 
 * Manual - Fan power is overridden and will run at the specified power until the override is cleared.
 
@@ -1080,7 +1257,6 @@ In both cases, the fan power is scaled by two factors:
 * The `fan_power_coefficient` setting scales in all cases. Useful for limiting noise since the StealthMax recommended fans are more powerful than strictly needed.
 
 * Thermal Limiting scales the actual fan power applied based on the maximum of the intake and exhaust temperatures. This is intended to improve the carbon's effective lifespan, which degrades at high temperatures. This feature can be disabled by setting xref:klipper-config-full[`fan_thermal_limit_coefficient: 1`].
-
 
 From within Klipper, the fan can be controlled much like any other fan:
 
@@ -1095,6 +1271,26 @@ WARNING: Setting the fan speed to 0 in Mainsail/Fluidd UI does **not** clear the
 
 If you would like to limit the maximum speed of the fan, e.g. to reduce noise, xref:klipper-config-full[set `fan_power_coefficient` to a value < 1].
 
+==== Automatic Fan Control
+
+Whenever the fan power isn't overridden, the fan is managed by a simple state machine. The computed fan power is then additionally xref:fan-control[scaled by other factors noted above].
+
+* **Automatic**: At least one automatic policy is satisfied (xref:klipper-config-full[see here]).
++
+Fan power is based on xref:klipper-config-full[`fan_power_automatic`] and scaled
+from 10% to 100% when the max of intake/exhaust VOC index reaches 1.5 std dev above `fan_policy_voc_passive_max` (or 200, max nominal, if not set).
++
+e.g. Using `fan_policy_voc_passive_max: 250`, the scaling factor would be 10% w/ VOC at 251, and ~90% w/ VOC at ~400.
+
+* **Cooldown**: An automatic fan policy was active within the last xref:klipper-config-full[`fan_policy_cooldown` seconds].
++
+Fan power is set to 10% of xref:klipper-config-full[`fan_power_automatic`].
+
+* **Passive**: Idle.
++
+Fan power is set to xref:klipper-config-full[`fan_power_passive`].
+
+
 == Credits
 
 * https://github.com/julianschill/klipper-led_effect[Julian Schill] - installation script (derived)
@@ -1104,6 +1300,16 @@ If you would like to limit the maximum speed of the fan, e.g. to reduce noise, x
 * https://github.com/Sensirion/gas-index-algorithm[Sensirion] - SGP40 gas index library (included)
 * https://github.com/klipper3d/klipper[Klipper] - AHTxx library (referenced)
 * https://github.com/apache/nuttx[Apache Nuttx] - I2C software reset (derived)
-* https://github.com/0ndsk4[0ndsk4] - Donated hardware for testing
 * Gary S. Brown - CRC32 table (included)
-* Drevic (Nevermore Discord) - SGP30 Testing Volunteer
+* Ursula K. Le Guin
+
+== Thanks To
+* https://github.com/0ndsk4[0ndsk4] - Donated hardware for testing
+* Appri (Nevermore Discord) - Testing Volunteer
+* BO_Andy (Nevermore Discord) - Testing Volunteer
+* https://central3dprinting.com[Central 3D Printing] - Donated hardware for testing
+* Drevic (Nevermore Discord) - Testing Volunteer
+
+== Generous Donors
+* https://github.com/0ndsk4[0ndsk4]
+* https://www.fysetc.com[Fysetc]

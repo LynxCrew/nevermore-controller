@@ -15,6 +15,8 @@
 #include "sensors/htu2xd.hpp"
 #include "sensors/sgp30.hpp"
 #include "sensors/sgp40.hpp"
+#include "sensors/sht4x.hpp"
+#include "sensors/zmod4410.hpp"
 #include <algorithm>
 #include <cstdio>
 #include <set>
@@ -26,7 +28,6 @@ namespace nevermore::sensors {
 
 Sensors g_sensors;
 SemaphoreHandle_t g_sensors_lock;
-Config g_config;
 
 namespace {
 
@@ -41,6 +42,8 @@ constexpr auto SENSOR_POWER_ON_DELAY = max({
         HTU21D_POWER_ON_DELAY,
         SGP30_POWER_ON_DELAY,
         SGP40_POWER_ON_DELAY,
+        SHT4x_POWER_ON_DELAY,
+        ZMOD4410_POWER_ON_DELAY,
 });
 
 using VecSensors = vector<unique_ptr<Sensor>>;
@@ -96,6 +99,8 @@ bool sensors_init_bus(I2C_Bus& bus, optional<EnvironmentalFilter::Kind> state) {
         add_env(htu2xd);
         add_env(sgp30);
         add_env(sgp40);
+        add_env(sht4x);
+        add_env(zmod4410);
     }
 
     return found_anything;
@@ -128,7 +133,7 @@ void foreach_sensor_bus(F&& go) {
 
 }  // namespace
 
-Sensors Sensors::with_fallbacks(Config const& config) const {
+Sensors Sensors::with_fallbacks(settings::Settings const& config) const {
     EnvironmentalFilter intake{EnvironmentalFilter::Kind::Intake};
     EnvironmentalFilter exhaust{EnvironmentalFilter::Kind::Exhaust};
     auto apply = [&]<typename A>(A& x, EnvironmentalFilter side) { x = side.get<A>(*this, config); };
@@ -145,7 +150,7 @@ Sensors Sensors::with_fallbacks(Config const& config) const {
 }
 
 bool init() {
-    g_sensors_lock = xSemaphoreCreateMutex();
+    g_sensors_lock = xSemaphoreCreateRecursiveMutex();
 
     adc_select_input(ADC_CHANNEL_TEMP_SENSOR);
     adc_set_temp_sensor_enabled(true);

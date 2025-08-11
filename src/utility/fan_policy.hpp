@@ -2,6 +2,7 @@
 
 #include "sdk/ble_data_types.hpp"
 #include "sensors.hpp"
+#include "utility/pid.hpp"
 #include <chrono>
 
 namespace nevermore {
@@ -13,7 +14,7 @@ struct [[gnu::packed]] FanPolicyEnvironmental {
 
     // How long to keep spinning after `should_filter` returns `false`
     BLE::TimeSecond16 cooldown = 60 * 15;
-    VOCIndex voc_passive_max = 200;  // <= max(intake, exhaust)  -> filthy in here; get scrubbin'
+    VOCIndex voc_passive_max = 250;  // <= max(intake, exhaust)  -> filthy in here; get scrubbin'
     VOCIndex voc_improve_min;        // <= (intake - exhaust)    -> things are improving, keep filtering
 
     // for now there's nothing to do; no additional constraints on any fields
@@ -24,9 +25,12 @@ struct [[gnu::packed]] FanPolicyEnvironmental {
 
     struct Instance {
         using Clock = std::chrono::steady_clock;
+        using PID = nevermore::PID<float>;
 
         FanPolicyEnvironmental const& params;  // NOLINT(cppcoreguidelines-avoid-const-or-ref-data-members)
+        Clock::time_point last_update = Clock::time_point::min();
         Clock::time_point last_filter = Clock::time_point::min();
+        PID::State<-1.f, 0.f> controller;
 
         // Stateful.
         // Returns fan power [0, 1] based on env state and policy parameters.

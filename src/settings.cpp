@@ -320,18 +320,21 @@ void Settings::reset(ResetFlags flags) {
         auto display_hw_ = display_hw;
         auto save_counter_ = save_counter;
         auto pins_ = pins;
+        auto servo_ = servo_vent;
         *this = {};
         header = header_;
         voc_calibration = voc_calibration_;
         display_hw = display_hw_;
         save_counter = save_counter_;
         pins = pins_;
+        servo_vent = servo_;
     }
 
     if (flags & hardware) {
         // FIXME: This is a maintence nightmare. There must be a better way of doing things.
         display_hw = Settings{}.display_hw;
         pins = PINS_DEFAULT;
+        servo_vent = {};
     }
 }
 
@@ -373,6 +376,29 @@ void save(SettingsPersisted& settings) {
     //      reduce the # of flashes.
     // NOLINTNEXTLINE(bugprone-suspicious-memory-comparison)
     if (memcmp(g_active_slot, &settings, sizeof(SettingsPersisted)) == 0) return;
+
+#define SETTINGS_FIELD_CHECK(field)                                                \
+    if (auto p = reinterpret_cast<SettingsPersisted const*>(g_active_slot.load()); \
+            memcmp(&p->field, &settings.field, sizeof(settings.field)) != 0)       \
+        printf("settings changed: `" #field "`\n");
+
+    SETTINGS_FIELD_CHECK(header);
+    SETTINGS_FIELD_CHECK(fan_policy_env);
+    SETTINGS_FIELD_CHECK(fan_policy_thermal);
+    SETTINGS_FIELD_CHECK(fan_power_passive);
+    SETTINGS_FIELD_CHECK(fan_power_automatic);
+    SETTINGS_FIELD_CHECK(fan_power_coefficient);
+    SETTINGS_FIELD_CHECK(voc_calibration);
+    SETTINGS_FIELD_CHECK(voc_gating_threshold);
+    SETTINGS_FIELD_CHECK(display_hw);
+    SETTINGS_FIELD_CHECK(display_ui);
+    SETTINGS_FIELD_CHECK(_0);
+    SETTINGS_FIELD_CHECK(display_brightness);
+    SETTINGS_FIELD_CHECK(save_counter);
+    SETTINGS_FIELD_CHECK(pins);
+    SETTINGS_FIELD_CHECK(servo_vent);
+    SETTINGS_FIELD_CHECK(_1);
+#undef SETTINGS_FIELD_CHECK
 
     if (reinterpret_cast<SettingsPersisted const*>(g_active_slot.load())->voc_calibration !=
             settings.voc_calibration)
@@ -423,6 +449,9 @@ void SettingsV0::merge_valid_fields(SettingsV0 const& x) {
     } catch (char const* msg) {
         printf("WARN - Settings - pins invalid, resetting to defaults. reason: %s\n", msg);
     }
+
+    if (x.servo_vent.validate()) servo_vent = x.servo_vent;
+    flags = x.flags;
 }
 
 }  // namespace nevermore::settings

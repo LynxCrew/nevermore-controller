@@ -80,9 +80,6 @@ WatchdogSetupInfo setup_watchdog_pre_stdio() {
 
     picowota_watchdog_enable_bootloader(WATCHDOG_TIMEOUT / 1ms, true);
 
-    static Timer watchdog{WATCHDOG_TIMEOUT / 4, [](auto&) { watchdog_update(); }};
-    watchdog.schedule();
-
     return info;
 }
 
@@ -110,8 +107,8 @@ int main() {
     for (auto const& bus : sensorium::i2c_pins()) {
         if (!bus) continue;
 
-        gpio_set_function(bus.clock, GPIO_FUNC_I2C);
-        gpio_set_function(bus.data, GPIO_FUNC_I2C);
+        gpio_set_function(bus.clock, GPIO_FUNC_NULL);
+        gpio_set_function(bus.data, GPIO_FUNC_NULL);
         gpio_pull_up(bus.clock);
         gpio_pull_up(bus.data);
     }
@@ -122,6 +119,10 @@ int main() {
             unsigned(I2C_BAUD_RATE_SENSOR_MAX));
 
     if (!gatt::init()) panic("ERR - GATT init failed\n");
+
+    static Timer watchdog{WATCHDOG_TIMEOUT / 4, [](auto&) { watchdog_update(); }};
+    watchdog.schedule();  // need to wait for btstack loop to be initialised
+
     if (!sensors::init()) panic("ERR - sensors init failed\n");
 
     auto poll = [](Timer& self) {

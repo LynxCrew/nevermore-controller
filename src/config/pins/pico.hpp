@@ -1,13 +1,13 @@
-// Classic Pico W.
+// Classic Pico.
 
 #pragma once
 
 #include "config/pins.hpp"
-#include "pico.h"  // IWYU pragma: keep for `RASPBERRYPI_PICO_W`
+#include "pico.h"  // IWYU pragma: keep for `RASPBERRYPI_PICO`
 #include <initializer_list>
 
-#ifndef RASPBERRYPI_PICO_W
-#error "`PICO_BOARD` is likely incorrect, `RASPBERRYPI_PICO_W` is not defined"
+#ifndef RASPBERRYPI_PICO
+#error "`PICO_BOARD` is likely incorrect, `RASPBERRYPI_PICO` is not defined"
 #endif
 
 // Exposed GPIOs: [0, 22], [26, 28]
@@ -40,6 +40,6 @@ constexpr Pins PINS_DEFAULT{
 
 // wireless SPI CS on 25
 constexpr std::initializer_list<GPIO> PINS_RESERVED_BOARD{
-        CYW43_PIN_WL_REG_ON, CYW43_PIN_WL_HOST_WAKE, 25, PICO_VSYS_PIN};
+        PICO_SMPS_MODE_PIN, PICO_VBUS_PIN, PICO_DEFAULT_LED_PIN, PICO_VSYS_PIN};
 
 }  // namespace nevermore

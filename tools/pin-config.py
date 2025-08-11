@@ -232,7 +232,8 @@ class Pins(DataclassMixin, DataClassJsonMixin):
     neopixel_data: GPIOs = csfield_gpios()
     photocatalytic_pwm: GPIO = csfield_gpio()
     vent_servo_pwm: GPIO = csfield_gpio()
-    _pad_0: Padding = csfield_pad(6)
+    cooler_pwm: GPIO = csfield_gpio()
+    _pad_0: Padding = csfield_pad(5)
     display_command: GPIO = csfield_gpio()
     display_reset: GPIO = csfield_gpio()
     display_brightness_pwm: GPIO = csfield_gpio()
@@ -289,6 +290,9 @@ def input_options(msg: str, default: str, opts: Set[str]):
             return default
         if response in opts:
             return response
+
+        print(f"Invalid response `{response}`.")
+        print(f"Enter one of the options listed. e.g. `{entries[0]}`")
 
 
 @dataclass

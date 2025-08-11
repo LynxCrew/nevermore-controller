@@ -94,8 +94,7 @@ enum class Cmd : uint8_t {
 
 template <typename A = uint8_t>
 optional<A> reg_read(I2C_Bus& bus, Cmd const cmd, bool nostop = false) {
-    if (!bus.write("CST816S", ADDRESS, cmd)) return {};
-    return bus.read<A>("CST816S", ADDRESS);
+    return bus.read<A>("CST816S", ADDRESS, to_underlying(cmd));
 }
 
 bool reg_write(I2C_Bus& bus, Cmd const cmd, uint8_t value) {
@@ -179,7 +178,7 @@ struct CST816S::ISR {
         for (auto& instance : g_instances)
             if (auto* p = reinterpret_cast<CST816S*>(instance.driver.user_data)) {
                 BaseType_t xHigherPriorityTaskWoken2 = pdFALSE;
-                xTaskNotifyFromISR(p->task.handle(), 0, eNoAction, &xHigherPriorityTaskWoken2);
+                xTaskNotifyFromISR(p->task, 0, eNoAction, &xHigherPriorityTaskWoken2);
                 xHigherPriorityTaskWoken |= xHigherPriorityTaskWoken2;
             }
 
