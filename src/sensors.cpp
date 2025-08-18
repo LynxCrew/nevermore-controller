@@ -1,9 +1,9 @@
-#include "sensors.hpp"
 #include "hardware/adc.h"
 #include "sdk/ble_data_types.hpp"
 #include "sdk/i2c_hw.hpp"
 #include "sdk/i2c_pio.hpp"
 #include "sdk/task.hpp"
+#include "sensors.hpp"
 #include "sensors/ahtxx.hpp"
 #include "sensors/async_sensor.hpp"
 #include "sensors/bme280.hpp"
@@ -27,6 +27,7 @@ using namespace std;
 namespace nevermore::sensors {
 
 Sensors g_sensors;
+PeltierSensors p_sensors;
 SemaphoreHandle_t g_sensors_lock;
 
 namespace {

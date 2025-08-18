@@ -63,6 +63,11 @@ struct [[gnu::packed]] Sensors {
     auto operator<=>(Sensors const&) const = default;
 };
 
+struct [[gnu::packed]] PeltierSensors {
+    BLE::Temperature temperature_cold;
+    BLE::Temperature temperature_hot;
+};
+
 extern Sensors g_sensors;
 extern SemaphoreHandle_t g_sensors_lock;
 

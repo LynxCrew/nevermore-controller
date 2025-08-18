@@ -115,6 +115,7 @@ UUID_SERVICE_FAN_POLICY = UUID("260a0845-e62f-48c6-aef9-04f62ff8bffd")
 UUID_SERVICE_DISPLAY = UUID("7be8ac4b-7eb4-4e09-b134-91a46b622832")
 UUID_SERVICE_PHOTOCATALYTIC = UUID("de44dd71-2400-4cd1-a3f3-9fb00c4697d7")
 UUID_SERVICE_SERVO = UUID("8959bb3e-3063-4a46-9b9a-69fdbc327f1c")
+UUID_SERVICE_PELTIER = UUID("8959bb3e-3063-1a46-8b9a-69fdbc327f1c")
 
 UUID_CHAR_GATT = short_uuid(0x2803)
 UUID_CHAR_PERCENT8 = short_uuid(0x2B04)
@@ -125,6 +126,8 @@ UUID_CHAR_SERIAL_NUMBER = short_uuid(0x2A25)
 UUID_CHAR_HARDWARE_REVISION = short_uuid(0x2A27)
 UUID_CHAR_SOFTWARE_REVISION = short_uuid(0x2A28)
 UUID_CHAR_PERCENT16_8 = UUID("0543a134-244f-405b-9d43-0351a5336ef7")
+UUID_FLOAT = UUID("0543a134-244f-415b-9e43-2351a5336ef7")
+UUID_BOOL = UUID("de44dd71-2421-5ad1-a3f3-9fb00c4698a7")
 
 UUID_CHAR_DATA_AGGREGATE = UUID("75134bec-dd06-49b1-bac2-c15e05fd7199")
 UUID_CHAR_FAN_TACHO = UUID("03f61fe0-9fe7-4516-98e6-056de551687f")
@@ -576,6 +579,7 @@ class CommBindings:
         self.ws2812 = transport.service(UUID_SERVICE_WS2812)
         self.display = transport.service(UUID_SERVICE_DISPLAY)
         self.servo = transport.service(UUID_SERVICE_SERVO)
+        self.peltier = transport.service(UUID_SERVICE_PELTIER)
 
         self.aggregate_env = self.env(UUID_CHAR_DATA_AGGREGATE, {P.READ, P.NOTIFY})
         self.aggregate_fan = self.fan(UUID_CHAR_FAN_AGGREGATE, {P.READ, P.NOTIFY})
@@ -617,7 +621,26 @@ class CommBindings:
         self.display_ui = self.display(UUID_CHAR_DISPLAY_UI, {P.WRITE})
         self.servo_vent_range = self.servo(UUID_CHAR_SERVO_RANGE, {P.WRITE})
         self.servo_vent_pwm = self.servo(UUID_CHAR_PERCENT16_8, {P.WRITE})
-
+        self.peltier_cycle_time = self.peltier(UUID_FLOAT, {P.WRITE})
+        self.peltier_max_pwm = self.peltier(UUID_CHAR_PERCENT16_8, {P.WRITE})
+        self.peltier_min_temp_cold_side = self.peltier(UUID_FLOAT, {P.WRITE})
+        self.peltier_max_temp_cold_side = self.peltier(UUID_FLOAT, {P.WRITE})
+        self.peltier_min_temp_hot_side = self.peltier(UUID_FLOAT, {P.WRITE})
+        self.peltier_max_temp_hot_side = self.peltier(UUID_FLOAT, {P.WRITE})
+        self.peltier_hot_side_safety = self.peltier(UUID_FLOAT, {P.WRITE})
+        self.peltier_max_deviation = self.peltier(UUID_FLOAT, {P.WRITE})
+        self.peltier_dew_point_safety = self.peltier(UUID_FLOAT, {P.WRITE})
+        self.peltier_dew_point_range = self.peltier(UUID_FLOAT, {P.WRITE})
+        self.peltier_dew_point_base = self.peltier(UUID_FLOAT, {P.WRITE})
+        self.peltier_target_temperature = self.peltier(UUID_FLOAT, {P.WRITE})
+        self.peltier_enable_delay = self.peltier(UUID_FLOAT, {P.WRITE})
+        self.peltier_smooth_time = self.peltier(UUID_FLOAT, {P.WRITE})
+        self.peltier_kp = self.peltier(UUID_FLOAT, {P.WRITE})
+        self.peltier_ki = self.peltier(UUID_FLOAT, {P.WRITE})
+        self.peltier_kd = self.peltier(UUID_FLOAT, {P.WRITE})
+        self.peltier_use_pid = self.peltier(UUID_BOOL, {P.WRITE})
+        self.peltier_enable = self.peltier(UUID_BOOL, {P.WRITE})
+        
 
 def _clamp(x: _Float, min: _Float, max: _Float) -> _Float:
     if x < min:
@@ -834,6 +857,176 @@ class CmdDisplayUI(CommandSimple):
     @override
     def params(self):
         return self.value.to_bytes(1, "little")
+
+@cmd_simple(lambda x: x.peltier_cycle_time)
+class CmdConfigPeltierCycleTime(CommandSimple):
+    value: float
+
+    @override
+    def params(self):
+        v = round(self.value * 1000000)
+        return v.to_bytes(1, "little")
+
+@cmd_simple(lambda x: x.peltier_max_pwm)
+class CmdConfigPeltierMaxPwm(CommandSimple):
+    percent: float
+
+    @override
+    def params(self):
+        p = _clamp(self.percent, 0, 1) * 100
+        return int(p * 2).to_bytes(1, "little")
+
+@cmd_simple(lambda x: x.peltier_min_temp_cold_side)
+class CmdConfigPeltierMinTempColdSide(CommandSimple):
+    value: float
+
+    @override
+    def params(self):
+        v = round(self.value * 1000000)
+        return v.to_bytes(1, "little")
+
+@cmd_simple(lambda x: x.peltier_max_temp_cold_side)
+class CmdConfigPeltierMaxTempColdSide(CommandSimple):
+    value: float
+
+    @override
+    def params(self):
+        v = round(self.value * 1000000)
+        return v.to_bytes(1, "little")
+
+@cmd_simple(lambda x: x.peltier_min_temp_hoz_side)
+class CmdConfigPeltierMinTempHotSide(CommandSimple):
+    value: float
+
+    @override
+    def params(self):
+        v = round(self.value * 1000000)
+        return v.to_bytes(1, "little")
+
+@cmd_simple(lambda x: x.peltier_max_temp_hot_side)
+class CmdConfigPeltierMaxTempHotSide(CommandSimple):
+    value: float
+
+    @override
+    def params(self):
+        v = round(self.value * 1000000)
+        return v.to_bytes(1, "little")
+
+@cmd_simple(lambda x: x.peltier_hot_side_safety)
+class CmdConfigPeltierHotSideSafety(CommandSimple):
+    value: float
+
+    @override
+    def params(self):
+        v = round(self.value * 1000000)
+        return v.to_bytes(1, "little")
+
+@cmd_simple(lambda x: x.peltier_max_deviation)
+class CmdConfigPeltierMaxDeviation(CommandSimple):
+    value: float
+
+    @override
+    def params(self):
+        v = round(self.value * 1000000)
+        return v.to_bytes(1, "little")
+
+@cmd_simple(lambda x: x.peltier_dew_point_safety)
+class CmdConfigPeltierDewPointSafety(CommandSimple):
+    value: float
+
+    @override
+    def params(self):
+        v = round(self.value * 1000000)
+        return v.to_bytes(1, "little")
+
+@cmd_simple(lambda x: x.peltier_dew_point_range)
+class CmdConfigPeltierDewPointRange(CommandSimple):
+    value: float
+
+    @override
+    def params(self):
+        v = round(self.value * 1000000)
+        return v.to_bytes(1, "little")
+
+@cmd_simple(lambda x: x.peltier_dew_point_base)
+class CmdConfigPeltierDewPointBase(CommandSimple):
+    value: float
+
+    @override
+    def params(self):
+        v = round(self.value * 1000000)
+        return v.to_bytes(1, "little")
+
+@cmd_simple(lambda x: x.peltier_target_temperature)
+class CmdConfigPeltierTargetTemperature(CommandSimple):
+    value: float
+
+    @override
+    def params(self):
+        v = round(self.value * 1000000)
+        return v.to_bytes(1, "little")
+
+@cmd_simple(lambda x: x.peltier_enable_delay)
+class CmdConfigPeltierEnableDelay(CommandSimple):
+    value: float
+
+    @override
+    def params(self):
+        v = round(self.value * 1000000)
+        return v.to_bytes(1, "little")
+
+@cmd_simple(lambda x: x.peltier_smooth_time)
+class CmdConfigPeltierSmoothTime(CommandSimple):
+    value: float
+
+    @override
+    def params(self):
+        v = round(self.value * 1000000)
+        return v.to_bytes(1, "little")
+
+@cmd_simple(lambda x: x.peltier_kp)
+class CmdConfigPeltierKp(CommandSimple):
+    value: float
+
+    @override
+    def params(self):
+        v = round(self.value * 1000000)
+        return v.to_bytes(1, "little")
+
+@cmd_simple(lambda x: x.peltier_ki)
+class CmdConfigPeltierKi(CommandSimple):
+    value: float
+
+    @override
+    def params(self):
+        v = round(self.value * 1000000)
+        return v.to_bytes(1, "little")
+
+@cmd_simple(lambda x: x.peltier_kd)
+class CmdConfigPeltierKd(CommandSimple):
+    value: float
+
+    @override
+    def params(self):
+        v = round(self.value * 1000000)
+        return v.to_bytes(1, "little")
+
+@cmd_simple(lambda x: x.peltier_use_pid)
+class CmdConfigPeltierUsePID(CommandSimple):
+    value: bool
+
+    @override
+    def params(self):
+        return int(self.value).to_bytes(1, "little")
+
+@cmd_simple(lambda x: x.peltier_enable)
+class CmdPeltierEnable(CommandSimple):
+    value: bool
+
+    @override
+    def params(self):
+        return int(self.value).to_bytes(1, "little")
+
 
 
 # must be of the form `xx:xx:xx:xx:xx:xx`, where `x` is a hex digit (uppercase)

@@ -272,6 +272,7 @@ BLE_DECL_SCALAR_OPTIONAL(TimeMilli24, uint24_t, 1, -3, 0, (uint32_t)0xFFFF'FFu);
 BLE_DECL_SCALAR_OPTIONAL(TimeSecond8, uint8_t, 1, 0, 0, 0xFFu);                   // range [0, 2^8 - 2]
 BLE_DECL_SCALAR_OPTIONAL(TimeSecond16, uint16_t, 1, 0, 0, 0xFFFFu);               // range [0, 2^16 - 2]
 BLE_DECL_SCALAR_OPTIONAL(TimeSecond32, uint32_t, 1, 0, 0, 0xFFFF'FFFFu);          // range [0, 2^32 - 2]
+BLE_DECL_SCALAR_OPTIONAL(Bool, uint8_t, 1, -1, 0, 0x00u);           //TODO Does that make sense?
 
 // Non-standard Scalars
 BLE_DECL_SCALAR_OPTIONAL(Percentage16_10, uint16_t, 1, -2, 0, 0xFFFFu);  // range [0, 100] %, 0.01 %
