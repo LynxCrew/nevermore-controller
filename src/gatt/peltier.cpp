@@ -34,6 +34,7 @@ struct PeltierSettings {
     float ki;
     float kd;
     float cycle_time;
+    float max_pwm;
     bool use_pid;
 };
 
@@ -41,6 +42,8 @@ PeltierSettings p_settings;
 
 
 struct PeltierControl {
+    using Clock = std::chrono::steady_clock;
+
     void update(sensors::PeltierSensors const& sensors = sensors::p_sensors,
             PeltierSettings const& peltier_settings = p_settings);
 
@@ -57,13 +60,82 @@ struct PeltierControl {
     }
 
 private:
+    [[nodiscard]] bool can_turn_on() const {
+        return Clock::now() < enable_time;
+    }
+
+    Clock::time_point enable_time = Clock::time_point::min();
+    Clock::time_point prev_temp_time = Clock::time_point::min();
+    double prev_error = 0;
+    double prev_der = 0;
+    double int_sum = 0;
+    double prev_temp = 0;
+
     BLE::Percentage8 _power = 0;
-    BLE::Peltier_Float _target = 0;
+    BLE::Temperature _target = 0;
     BLE::Bool _enable = 0;
+
 };
 
 void PeltierControl::update(sensors::PeltierSensors const& sensors = sensors::p_sensors,
         PeltierSettings const& peltier_settings = p_settings) {
-    if (sensors.
+    if (sensors.temperature_cold < peltier_settings.min_temp_cold) {
+        //ERROR
+    }
+    if (sensors.temperature_cold > peltier_settings.max_temp_cold) {
+        //ERROR
+    }
+    if (sensors.temperature_hot < peltier_settings.min_temp_hot) {
+        //ERROR
+    }
+    if (sensors.temperature_hot > peltier_settings.max_temp_hot) {
+        //ERROR
+    }
+    if (abs(sensors.temperature_hot - sensors.temperature_cold) > peltier_settings.max_deviation) {
+        //ERROR
+    }
+
+    double power = 100;
+
+    if (!peltier_settings.use_pid) {
+        if (sensors.temperature_cold < _target) {
+            if (can_turn_on()) {
+                power = 100;
+            } else {
+                power = 0;
+            }
+        } else {
+            power = 0;
+            enable_time =
+                    Clock::now() + std::chrono::milliseconds(uint64_t(1000 * p_settings.enable_delay));
+        }
+    } else {
+        double error = _target - sensors.temperature_cold;
+        double dt = (Clock::now() - prev_temp_time).count();
+        double ic = ((prev_error + error) / 2.0) * dt;
+
+        double i = int_sum + ic;
+
+        double n = max(1.0, p_settings.smooth_time / dt);
+        double dc = -(sensors.temperature_cold - prev_temp) / dt;
+        dc = ((n - 1.0) * prev_der + dc) / n;
+        
+        double o = p_settings.kp * error + p_settings.ki * i + p_settings.kd * dc;
+        double so = max(0.0, min(p_settings.max_pwm, o));
+
+        double pwm = p_settings.max_pwm - so;
+        pwm = pwm * 100;
+
+
+    }
+
+
+    if (_power != power) {
+        _power = power;
+        g_notify_fan_power_tacho_aggregate.notify();  // `g_fan_power` changed
+        g_notify_aggregate.notify();                  // `g_fan_power` changed
+    }
+
+
 }
 
