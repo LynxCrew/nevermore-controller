@@ -26,6 +26,9 @@ constexpr Pins PINS_DEFAULT{
 
         .fan_pwm = {13},
         .fan_tachometer = {15},
+        .peltier_pwm = {}, //TODO
+        .peltier_sensor_cold = {}, //TODO
+        .peltier_sensor_hot = {}, //TODO
         .neopixel_data = {12},
         .photocatalytic_pwm = 16,
         .vent_servo_pwm = 14,

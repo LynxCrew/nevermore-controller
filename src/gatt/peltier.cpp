@@ -47,7 +47,7 @@ struct PeltierControl {
     void update(sensors::PeltierSensors const& sensors = sensors::p_sensors,
             PeltierSettings const& peltier_settings = p_settings);
 
-    void target(BLE::Percentage8 target) {
+    void target(BLE::Temperature target) {
         _target = target;
     }
 
@@ -76,6 +76,12 @@ private:
     BLE::Bool _enable = 0;
 
 };
+
+PeltierControl g_peltier;
+
+void peltier_target_temp_set(BLE::Temperature target) {
+    g_peltier.target(target);
+}
 
 void PeltierControl::update(sensors::PeltierSensors const& sensors = sensors::p_sensors,
         PeltierSettings const& peltier_settings = p_settings) {
@@ -136,6 +142,49 @@ void PeltierControl::update(sensors::PeltierSensors const& sensors = sensors::p_
         g_notify_aggregate.notify();                  // `g_fan_power` changed
     }
 
-
+    auto duty = uint16_t(numeric_limits<uint16_t>::max() * (power / 100.));
+    for (auto&& pin : Pins::active().peltier_pwm)
+        if (pin) pwm_set_gpio_duty(pin, duty);
 }
 
+bool init() {
+    // setup PWM configurations for fan PWM and fan tachometer
+    for (auto&& pin : Pins::active().peltier_pwm) {
+        if (!pin) continue;
+
+        auto cfg = pwm_get_default_config();
+        pwm_config_set_freq_hz(cfg, 1/p_settings.cycle_time);
+        pwm_init(pwm_gpio_to_slice_num_(pin), &cfg, true);
+    }
+
+    // HACK:  We'd like to notify on write to tachometer changes, but the code base isn't setup
+    //        for that yet. Internally poll and update based on diffs for now.
+    mk_timer("gatt-fan-tachometer-notify", SENSOR_UPDATE_PERIOD)([](auto*) {
+        static decltype(fan_rpm()) g_prev;
+        if (g_prev == fan_rpm()) return;
+
+        g_prev = fan_rpm();
+        g_notify_fan_power_tacho_aggregate.notify();
+        g_notify_aggregate.notify();
+    });
+
+    mk_timer("fan-control", 1.s / FAN_CONTROL_UPDATE_HZ)([](auto*) {
+        static auto g_instance = settings::g_active.fan_policy_env.instance();
+        // keep updating even w/ `g_fan_power_override` set b/c:
+        // * need to refresh to account for thermal throttling policy
+        // * automatic PID needs to be kept up to date for when we disengage
+        auto perc = ({
+            // HACK: FIXME: The fan control timer has been observed to stall.
+            //              (Presumably this means all timers stall, but I haven't been able to confirm.)
+            //              I've  had no luck reproducing this w/ debugger.
+            //              For now, disable the guard. This'll allow read races,
+            //              but those should be benign.
+            // auto _ = sensors::sensors_guard();
+            g_instance(sensors::g_sensors);
+        });
+
+        g_peltier.update();
+    });
+
+    return true;
+}

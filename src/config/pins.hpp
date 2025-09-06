@@ -161,6 +161,9 @@ struct [[gnu::packed]] Pins {
     GPIOs fan_pwm{};         // mirrored
     GPIOs fan_tachometer{};  // summed in SW
     GPIOs neopixel_data{};   // reserve space, but disallow multiple pins
+    GPIOs peltier_pwm{};
+    GPIOs peltier_sensor_cold{};
+    GPIOs peltier_sensor_hot{};
     GPIO photocatalytic_pwm;
     GPIO vent_servo_pwm;
     GPIO cooler_pwm;
