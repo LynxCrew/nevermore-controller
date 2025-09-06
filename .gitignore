@@ -11,3 +11,4 @@
 /src/nevermore.gatt
 # python interpreter artifacts
 __pycache__
+.vs
