@@ -3,47 +3,48 @@
   "WorkspaceRootPath": "D:\\3D-Printer\\Software\\nevermore-controller\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\3D-Printer\\Software\\nevermore-controller\\src\\sdk\\ble_data_types.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\sdk\\ble_data_types.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\3D-Printer\\Software\\nevermore-controller\\src\\utility\\peltier.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\utility\\peltier.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\3D-Printer\\Software\\nevermore-controller\\src\\gatt\\fan.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\gatt\\fan.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\3D-Printer\\Software\\nevermore-controller\\src\\sensors.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\sensors.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\3D-Printer\\Software\\nevermore-controller\\src\\gatt\\peltier.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\gatt\\peltier.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\3D-Printer\\Software\\nevermore-controller\\src\\sensors.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\sensors.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|CMake Overview Pages||{B1CAA5B0-FEB1-4350-8AB9-F895876842F2}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\3D-Printer\\Software\\nevermore-controller\\src\\gatt\\environmental.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\gatt\\environmental.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\3D-Printer\\Software\\nevermore-controller\\src\\utility\\peltier.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\utility\\peltier.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\3D-Printer\\Software\\nevermore-controller\\src\\sensors\\environmental.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\sensors\\environmental.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\3D-Printer\\Software\\nevermore-controller\\src\\utility\\pid.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\utility\\pid.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\3D-Printer\\Software\\nevermore-controller\\src\\sensors.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\sensors.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\3D-Printer\\Software\\nevermore-controller\\src\\utility\\profile.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\utility\\profile.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\3D-Printer\\Software\\nevermore-controller\\src\\config\\pins.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\config\\pins.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\3D-Printer\\Software\\nevermore-controller\\src\\utility\\servo.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\utility\\servo.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\3D-Printer\\Software\\nevermore-controller\\src\\gatt\\fan.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\gatt\\fan.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\3D-Printer\\Software\\nevermore-controller\\src\\utility\\servo.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\utility\\servo.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\3D-Printer\\Software\\nevermore-controller\\src\\config\\pins\\pico_w.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\config\\pins\\pico_w.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\3D-Printer\\Software\\nevermore-controller\\src\\config\\pins\\pico.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\config\\pins\\pico.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\3D-Printer\\Software\\nevermore-controller\\src\\binary_info.cpp.in||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\binary_info.cpp.in||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\3D-Printer\\Software\\nevermore-controller\\tools\\pin-config.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:tools\\pin-config.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
     }
   ],
   "DocumentGroupContainers": [
@@ -53,104 +54,92 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 6,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "ble_data_types.hpp",
-              "DocumentMoniker": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\sdk\\ble_data_types.hpp",
-              "RelativeDocumentMoniker": "src\\sdk\\ble_data_types.hpp",
-              "ToolTip": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\sdk\\ble_data_types.hpp",
-              "RelativeToolTip": "src\\sdk\\ble_data_types.hpp",
-              "ViewState": "AgIAAPIAAAAAAAAAAAAkwAMBAAAZAAAAAAAAAA==",
+              "DocumentIndex": 3,
+              "Title": "environmental.hpp",
+              "DocumentMoniker": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\sensors\\environmental.hpp",
+              "RelativeDocumentMoniker": "src\\sensors\\environmental.hpp",
+              "ToolTip": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\sensors\\environmental.hpp",
+              "RelativeToolTip": "src\\sensors\\environmental.hpp",
+              "ViewState": "AgIAAFoAAAAAAAAAAAAawHgAAAAcAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
-              "WhenOpened": "2025-08-16T11:48:52.205Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-09-12T15:11:22.478Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
-              "Title": "CMake Overview Pages",
-              "DocumentMoniker": "CMake Overview Pages",
-              "ToolTip": "CMake Overview Pages",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2025-08-16T11:27:00.593Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 8,
-              "Title": "profile.hpp",
-              "DocumentMoniker": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\utility\\profile.hpp",
-              "RelativeDocumentMoniker": "src\\utility\\profile.hpp",
-              "ToolTip": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\utility\\profile.hpp",
-              "RelativeToolTip": "src\\utility\\profile.hpp",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
-              "WhenOpened": "2025-08-11T12:02:17.723Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 7,
-              "Title": "pid.hpp",
-              "DocumentMoniker": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\utility\\pid.hpp",
-              "RelativeDocumentMoniker": "src\\utility\\pid.hpp",
-              "ToolTip": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\utility\\pid.hpp",
-              "RelativeToolTip": "src\\utility\\pid.hpp",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
-              "WhenOpened": "2025-08-11T12:00:19.378Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 9,
-              "Title": "servo.hpp",
-              "DocumentMoniker": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\utility\\servo.hpp",
-              "RelativeDocumentMoniker": "src\\utility\\servo.hpp",
-              "ToolTip": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\utility\\servo.hpp",
-              "RelativeToolTip": "src\\utility\\servo.hpp",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
-              "WhenOpened": "2025-08-11T12:00:16.454Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 6,
-              "Title": "peltier.hpp",
-              "DocumentMoniker": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\utility\\peltier.hpp",
-              "RelativeDocumentMoniker": "src\\utility\\peltier.hpp",
-              "ToolTip": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\utility\\peltier.hpp",
-              "RelativeToolTip": "src\\utility\\peltier.hpp",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
-              "WhenOpened": "2025-08-11T12:00:12.396Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "peltier.cpp",
-              "DocumentMoniker": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\utility\\peltier.cpp",
-              "RelativeDocumentMoniker": "src\\utility\\peltier.cpp",
-              "ToolTip": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\utility\\peltier.cpp",
-              "RelativeToolTip": "src\\utility\\peltier.cpp",
-              "ViewState": "AgIAADEAAAAAAAAAAAAIwDwAAAANAAAAAAAAAA==",
+              "DocumentIndex": 2,
+              "Title": "environmental.cpp",
+              "DocumentMoniker": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\gatt\\environmental.cpp",
+              "RelativeDocumentMoniker": "src\\gatt\\environmental.cpp",
+              "ToolTip": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\gatt\\environmental.cpp",
+              "RelativeToolTip": "src\\gatt\\environmental.cpp",
+              "ViewState": "AgIAAH0AAAAAAAAAAAAawIsAAAA4AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
-              "WhenOpened": "2025-08-11T12:00:02.334Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-09-12T15:11:03.702Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 10,
-              "Title": "servo.cpp",
-              "DocumentMoniker": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\utility\\servo.cpp",
-              "RelativeDocumentMoniker": "src\\utility\\servo.cpp",
-              "ToolTip": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\utility\\servo.cpp",
-              "RelativeToolTip": "src\\utility\\servo.cpp",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Title": "pin-config.py",
+              "DocumentMoniker": "D:\\3D-Printer\\Software\\nevermore-controller\\tools\\pin-config.py",
+              "RelativeDocumentMoniker": "tools\\pin-config.py",
+              "ToolTip": "D:\\3D-Printer\\Software\\nevermore-controller\\tools\\pin-config.py",
+              "RelativeToolTip": "tools\\pin-config.py",
+              "ViewState": "AgIAANUAAAAAAAAAAAApwOkAAAAvAAAAAAAAAA==",
+              "Icon": "00000000-0000-0000-0000-000000000000.000000|iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAHfSURBVDhPpZCxaxNhGMZ/9zVJaUuDUlq1FBWLZBFTCXo4BFyU1qGKi4OkIHhkzF/g0KF00M2lR9YUdDDQQVAcJILoQUd1UNRmkhoRm8RL777v7nOoCZd4AcEH3uF5nvd73vd74X\u002BgtTai3LIsHeWDEEJct217a1DvwbIs7bpubFUqFW3b9naxWLwWfSOipAvHcfqqi0KhkMtms3cty1rsaomeG4FpmoMSANVqlXQ6nQMWgacMC4hOBchduEj\u002ByjKjScGh8SS1Wq3nxQZEN3j1eY/Vrfe8rTeQvsf89ARLS1cz5XIZ/uUGXxptQiVRUhJIybudXaZn52a7vbEBpmkyNb/A69YM9W8tDEJOTI2hpI\u002BSkvOZH2f13sNAB\u002B07sV9wHIdH9Unquz9RvoeUPtL3UFISKkky\u002BAT7HwTi6FpsgGma3N9\u002Bg5I\u002BKaFZyU8wOpJChwHnjiuE9wKCXyC/zsQGOI7DeELjtiUPbgky6Wd/HA3KBelC4AIpNfQGl88cQ0mfI5PugRhKkM2DUk0INYwtPI/dAGAlf4rbl06T6DyBVgeCABJzYPhwcm0V8ICNvwJKpVIf37h3IxSyKVAuBMDIYQAMw1jvaxwGrYNl3Xq5o79vat3Y3Nedj4\u002B11je7/m\u002BXOuyzFtDhUgAAAABJRU5ErkJggg==",
+              "WhenOpened": "2025-09-02T14:55:39.35Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "pico_w.hpp",
+              "DocumentMoniker": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\config\\pins\\pico_w.hpp",
+              "RelativeDocumentMoniker": "src\\config\\pins\\pico_w.hpp",
+              "ToolTip": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\config\\pins\\pico_w.hpp",
+              "RelativeToolTip": "src\\config\\pins\\pico_w.hpp",
+              "ViewState": "AgIAAAsAAAAAAAAAAAAawBwAAAAIAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-09-02T14:54:53.712Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "pico.hpp",
+              "DocumentMoniker": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\config\\pins\\pico.hpp",
+              "RelativeDocumentMoniker": "src\\config\\pins\\pico.hpp",
+              "ToolTip": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\config\\pins\\pico.hpp",
+              "RelativeToolTip": "src\\config\\pins\\pico.hpp",
+              "ViewState": "AgIAAAsAAAAAAAAAAAAawBwAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-09-02T14:54:00.571Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "binary_info.cpp.in",
+              "DocumentMoniker": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\binary_info.cpp.in",
+              "RelativeDocumentMoniker": "src\\binary_info.cpp.in",
+              "ToolTip": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\binary_info.cpp.in",
+              "RelativeToolTip": "src\\binary_info.cpp.in",
+              "ViewState": "AgIAAC4AAAAAAAAAAAApwEUAAAAvAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2025-09-02T14:50:50.537Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "peltier.cpp",
+              "DocumentMoniker": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\gatt\\peltier.cpp",
+              "RelativeDocumentMoniker": "src\\gatt\\peltier.cpp",
+              "ToolTip": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\gatt\\peltier.cpp*",
+              "RelativeToolTip": "src\\gatt\\peltier.cpp*",
+              "ViewState": "AgIAAGoAAAAAAAAAAAAAAJAAAAAqAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
-              "WhenOpened": "2025-08-11T11:59:38.101Z"
+              "WhenOpened": "2025-08-16T15:59:16.24Z",
+              "EditorCaption": ""
             }
           ]
         }
@@ -166,48 +155,58 @@
         "Y": 336,
         "Width": 1393,
         "Height": 660,
-        "WindowState": 2
+        "WindowState": 0
       },
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 3,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 5,
+              "Title": "pins.hpp",
+              "DocumentMoniker": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\config\\pins.hpp",
+              "RelativeDocumentMoniker": "src\\config\\pins.hpp",
+              "ToolTip": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\config\\pins.hpp",
+              "RelativeToolTip": "src\\config\\pins.hpp",
+              "ViewState": "AgIAAEkAAAAAAAAAAAAowGsAAABEAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-09-02T14:49:28.478Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
               "Title": "sensors.cpp",
               "DocumentMoniker": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\sensors.cpp",
               "RelativeDocumentMoniker": "src\\sensors.cpp",
               "ToolTip": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\sensors.cpp",
               "RelativeToolTip": "src\\sensors.cpp",
-              "ViewState": "AgIAAGYAAAAAAAAAAAAowIgAAAAyAAAAAAAAAA==",
+              "ViewState": "AgIAAHgAAAAAAAAAAAAAAJYAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
-              "WhenOpened": "2025-08-16T11:38:37.728Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-08-16T11:38:37.728Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 6,
               "Title": "fan.cpp",
               "DocumentMoniker": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\gatt\\fan.cpp",
               "RelativeDocumentMoniker": "src\\gatt\\fan.cpp",
               "ToolTip": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\gatt\\fan.cpp",
               "RelativeToolTip": "src\\gatt\\fan.cpp",
-              "ViewState": "AgIAAFYAAAAAAAAAAAAowHIAAAAcAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABcAAAAtAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
-              "WhenOpened": "2025-08-16T11:33:14.587Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-08-16T11:33:14.587Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 1,
               "Title": "sensors.hpp",
               "DocumentMoniker": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\sensors.hpp",
               "RelativeDocumentMoniker": "src\\sensors.hpp",
               "ToolTip": "D:\\3D-Printer\\Software\\nevermore-controller\\src\\sensors.hpp",
               "RelativeToolTip": "src\\sensors.hpp",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAAAPAAAAAAAAAA==",
+              "ViewState": "AgIAABoAAAAAAAAAAAAowEMAAAAlAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
               "WhenOpened": "2025-08-16T11:34:52.805Z",
               "EditorCaption": ""

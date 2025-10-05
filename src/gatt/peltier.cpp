@@ -18,6 +18,9 @@ using namespace std;
 namespace nevermore::gatt::peltier {
 
 namespace {
+
+constexpr uint8_t PELTIER_CONTROL_UPDATE_HZ = 10;
+
 struct PeltierSettings {
     float min_temp_cold;
     float max_temp_cold;
@@ -168,20 +171,7 @@ bool init() {
         g_notify_aggregate.notify();
     });
 
-    mk_timer("fan-control", 1.s / FAN_CONTROL_UPDATE_HZ)([](auto*) {
-        static auto g_instance = settings::g_active.fan_policy_env.instance();
-        // keep updating even w/ `g_fan_power_override` set b/c:
-        // * need to refresh to account for thermal throttling policy
-        // * automatic PID needs to be kept up to date for when we disengage
-        auto perc = ({
-            // HACK: FIXME: The fan control timer has been observed to stall.
-            //              (Presumably this means all timers stall, but I haven't been able to confirm.)
-            //              I've  had no luck reproducing this w/ debugger.
-            //              For now, disable the guard. This'll allow read races,
-            //              but those should be benign.
-            // auto _ = sensors::sensors_guard();
-            g_instance(sensors::g_sensors);
-        });
+    mk_timer("pwltier-control", 1.s / PELTIER_CONTROL_UPDATE_HZ)([](auto*) {
 
         g_peltier.update();
     });

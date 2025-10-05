@@ -1,5 +1,5 @@
-#include "environmental.hpp"
 #include "config.hpp"
+#include "environmental.hpp"
 #include "handler_helpers.hpp"
 #include "sdk/ble_data_types.hpp"
 #include "sdk/btstack.hpp"
@@ -89,6 +89,7 @@ void disconnected(hci_con_handle_t conn) {
 optional<uint16_t> attr_read(
         hci_con_handle_t const conn, uint16_t const attr, uint16_t const offset, span<uint8_t> const buffer) {
     auto sensors = []() { return nevermore::sensors::g_sensors.with_fallbacks(); };
+    auto peltier_sensors = []() { return nevermore::sensors::p_sensors; };
 
     switch (attr) {
         // NOLINTBEGIN(bugprone-branch-clone)
@@ -104,6 +105,8 @@ optional<uint16_t> attr_read(
         USER_DESCRIBE(ENV_VOC_RAW_INTAKE, "Intake VOC Raw")
         USER_DESCRIBE(ENV_VOC_RAW_EXHAUST, "Exhaust VOC Raw")
         USER_DESCRIBE(ENV_AGGREGATE, "Aggregated Service Data")
+        USER_DESCRIBE(BT(TEMPERATURE_04), "Temperature Hot Side")
+        USER_DESCRIBE(BT(TEMPERATURE_05), "Temperature Cold Side")
 
         ESM_DESCRIBE(BT(TEMPERATURE_01), ESM_TEMPERATURE)
         ESM_DESCRIBE(BT(TEMPERATURE_02), ESM_TEMPERATURE)
@@ -133,6 +136,8 @@ optional<uint16_t> attr_read(
         READ_VALUE(ENV_VOC_RAW_INTAKE, sensors().voc_raw_intake)
         READ_VALUE(ENV_VOC_RAW_EXHAUST, sensors().voc_raw_exhaust)
         READ_VALUE(ENV_AGGREGATE, sensors())
+        READ_VALUE(BT(TEMPERATURE_04), peltier_sensors().temperature_cold)
+        READ_VALUE(BT(TEMPERATURE_05), peltier_sensors().temperature_hot)
 
         READ_CLIENT_CFG(ENV_AGGREGATE, g_notify_aggregate)
 
