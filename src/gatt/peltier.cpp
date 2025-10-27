@@ -62,6 +62,7 @@ struct PeltierControl {
         return _power;
     }
 
+// Check whether the safety time has elapsed
 private:
     [[nodiscard]] bool can_turn_on() const {
         return Clock::now() < enable_time;
@@ -119,6 +120,7 @@ void PeltierControl::update(sensors::PeltierSensors const& sensors = sensors::p_
                     Clock::now() + std::chrono::milliseconds(uint64_t(1000 * p_settings.enable_delay));
         }
     } else {
+        // Klipper PID algorithm rewritten in c++, check TEC_Tester
         double error = _target - sensors.temperature_cold;
         double dt = (Clock::now() - prev_temp_time).count();
         double ic = ((prev_error + error) / 2.0) * dt;
@@ -138,13 +140,14 @@ void PeltierControl::update(sensors::PeltierSensors const& sensors = sensors::p_
 
     }
 
-
+    // Not done yet, copied over from fan, should report peltier pwm and temps later
     if (_power != power) {
         _power = power;
         g_notify_fan_power_tacho_aggregate.notify();  // `g_fan_power` changed
         g_notify_aggregate.notify();                  // `g_fan_power` changed
     }
 
+    // Set the pwm value for all pins registered for the peltiers (not sure how I register them?)
     auto duty = uint16_t(numeric_limits<uint16_t>::max() * (power / 100.));
     for (auto&& pin : Pins::active().peltier_pwm)
         if (pin) pwm_set_gpio_duty(pin, duty);
